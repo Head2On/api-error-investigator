@@ -1,0 +1,27 @@
+[project]
+name = "ai-api-error-investigator"
+version = "0.1.0"
+description = "A CLI developer tool for investigating AI API errors"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "ISHAN KUMAR", email = "ishankumar063@gmail.com" },
+]
+keywords = ["cli", "developer-tools", "error-analysis", "debugging", "python"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Debuggers",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "typer",
+    "pyyaml",
+]

@@ -1,0 +1,31 @@
+error_type: sqlalchemy.exc.OperationalError
+aliases:
+  - OperationalError
+
+category: database
+subcategory: connectivity
+
+summary: "The database could not be reached, or the connection was lost mid-operation."
+explanation: >
+  SQLAlchemy wraps low-level database driver errors (connection refused, timeout,
+  connection reset, server shutdown) as OperationalError. The query never reached
+  the database, or the connection died while it was being sent. This is almost
+  never a bug in your SQL — it's an environment, network, or resource problem.
+common_causes:
+  - "Database server is down or unreachable (wrong host/port, firewall, VPN)."
+  - "Connection pool exhausted — too many concurrent requests for the pool size."
+  - "Database server closed the connection (idle timeout, max_connections reached)."
+  - "Network hiccup between application and database."
+  - "Wrong credentials causing the driver to fail during connect."
+
+fixes:
+  - "Verify the database is running and reachable from the application host."
+  - "Check connection string (host, port, database name, credentials) in your config."
+  - "Inspect connection pool settings — increase pool_size / max_overflow if under load."
+  - "Enable pool_pre_ping=True so SQLAlchemy tests connections before using them."
+  - "Add retry logic with backoff for transient connection failures."
+
+docs_url: "https://docs.sqlalchemy.org/en/20/core/pooling.html#disconnect-handling-pessimistic"
+related_errors:
+  - sqlalchemy.exc.IntegrityError
+  - sqlalchemy.exc.TimeoutError

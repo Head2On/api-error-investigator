@@ -1,0 +1,31 @@
+error_type: sqlalchemy.exc.DataError
+aliases:
+  - DataError
+
+category: database
+subcategory: data_validation
+
+summary: "The database rejected a value because its type or format was invalid."
+explanation: >
+  The query reached the database, but the database refused one of the values
+  because it didn't fit the column's type or constraints. Unlike IntegrityError
+  (which is about constraints like unique/foreign key), DataError is about the
+  value itself — wrong type, wrong format, out of range, or too long for the column.
+common_causes:
+  - "Passing a string into a numeric or date column."
+  - "A string exceeds the column's maximum length (e.g. VARCHAR(50))."
+  - "Date/time value in a format the database can't parse."
+  - "Numeric value out of range for the column type (e.g. int32 overflow)."
+  - "Boolean stored in a column that expects a specific enum or char."
+
+fixes:
+  - "Check the column definition — the error message names the column."
+  - "Validate input before insert/update; coerce types at the boundary (Pydantic, dataclass)."
+  - "For string-length errors, either trim the value or widen the column (ALTER TABLE)."
+  - "For date errors, use Python datetime objects, not raw strings."
+  - "For range errors, verify the numeric type of the column can hold the value."
+
+docs_url: "https://docs.sqlalchemy.org/en/20/orm/exceptions.html"
+related_errors:
+  - sqlalchemy.exc.IntegrityError
+  - sqlalchemy.exc.StatementError

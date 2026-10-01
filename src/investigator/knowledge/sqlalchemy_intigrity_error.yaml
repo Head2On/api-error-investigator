@@ -1,0 +1,29 @@
+error_type: sqlalchemy.exc.IntegrityError
+aliases:
+  - IntegrityError
+
+category: database
+subcategory: constraint_violation
+
+summary: "A database constraint was violated (unique, foreign key, or not-null)."
+explanation: >
+  SQLAlchemy issued an INSERT or UPDATE that the database rejected because it
+  would break a constraint. The row was not written. This is often caused by
+  duplicate data, a missing foreign key target, or a required column left empty.
+common_causes:
+  - "Inserting a row that duplicates a unique column (e.g. email, username)."
+  - "Referencing a foreign key row that does not exist yet."
+  - "Inserting NULL into a NOT NULL column."
+  - "A race condition where two requests insert the same key."
+
+fixes:
+  - "Check the constraint name in the error message — it tells you which column."
+  - "For duplicates: query the table first, or use an upsert (ON CONFLICT DO NOTHING/UPDATE)."
+  - "For foreign keys: ensure the parent row is committed before the child insert."
+  - "For NULL violations: set the column value or give it a DB-level default."
+  - "Wrap the commit in a try/except and handle IntegrityError explicitly."
+
+docs_url: "https://docs.sqlalchemy.org/en/20/orm/exceptions.html"
+related_errors:
+  - sqlalchemy.exc.OperationalError
+  - sqlalchemy.exc.DataError

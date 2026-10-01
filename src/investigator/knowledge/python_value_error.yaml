@@ -1,0 +1,30 @@
+error_type: ValueError
+aliases: []
+
+category: python
+subcategory: data_validation
+
+summary: "A function received a value of the correct type but with an invalid content."
+explanation: >
+  ValueError means the argument had the right type, but the value itself was
+  not acceptable to the function. It's not a type error (which would mean the
+  wrong type was passed) — it's a content error. Built-in functions, int(),
+  float(), datetime parsing, and many libraries raise it for malformed input.
+common_causes:
+  - "Calling int(\"abc\") or float(\"12.3.4\") on non-numeric strings."
+  - "Unpacking a sequence with the wrong number of elements."
+  - "Passing a negative number to a function that requires non-negative."
+  - "Parsing a malformed date/time or UUID string."
+  - "Iterating over a closed file or reading from a closed resource."
+
+fixes:
+  - "Read the error message — Python's ValueError almost always states what's wrong."
+  - "Wrap the call in try/except and validate input before passing it in."
+  - "If parsing user input, use a parser that returns a result type instead (e.g. Pydantic)."
+  - "Check the argument at the call site, not deep inside the function."
+  - "For unpacking errors, print or log the value to see how many items it actually has."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#ValueError"
+related_errors:
+  - TypeError
+  - KeyError

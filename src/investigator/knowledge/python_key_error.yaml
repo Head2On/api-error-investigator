@@ -1,0 +1,31 @@
+error_type: KeyError
+aliases: []
+
+category: python
+subcategory: lookup
+
+summary: "A dictionary (or mapping) was accessed with a key that does not exist."
+explanation: >
+  KeyError is raised when you use my_dict[key] and key is not present. It's
+  distinct from IndexError (which is for sequences). The message is the
+  missing key itself, wrapped in quotes. This is one of the most common
+  Python errors and usually indicates a mismatch between what the code expects
+  and what the data actually contains.
+common_causes:
+  - "Accessing a dict field that wasn't set (e.g. response[\"user\"][\"email\"])."
+  - "Iterating and deleting keys at the same time."
+  - "A dict populated from JSON/API response missing an expected key."
+  - "Typo in the key string."
+  - "Case sensitivity — 'Name' vs 'name'."
+
+fixes:
+  - "Use my_dict.get(key, default) when the key may not exist."
+  - "Guard with `if key in my_dict:` before accessing."
+  - "Use collections.defaultdict(type) if a missing key should auto-initialize."
+  - "Print the actual keys with list(my_dict.keys()) to compare against expectation."
+  - "For nested access, use .get() at each level, or a library like pydantic for validation."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#KeyError"
+related_errors:
+  - IndexError
+  - AttributeError
