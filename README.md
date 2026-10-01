@@ -37,10 +37,10 @@ KnowledgeEntry  |  None
 ## Installation
 
 ```bash
-git clone https://github.com/<your-username>/ai-api-error-investigator.git
+git clone https://github.com/Head2On/api-error-investigator.git
 cd ai-api-error-investigator
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
+source .venv/bin/activate   # Windows: .venv\Scripts\Activate
 pip install -e .
 ```
 
@@ -80,7 +80,7 @@ pytest tests/ -v
 
 ## Roadmap
 
-- **Chunk A** — Core deterministic investigator ✅
+- **Chunk A** — Core deterministic investigator
 - **Chunk B** — AI investigation engine (opt-in escalation)
 - **Chunk C** — SDK + FastAPI middleware
 - **Chunk D–G** — Backend, infrastructure, production hardening, release
