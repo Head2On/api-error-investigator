@@ -1,36 +1,35 @@
 import typer
-from investigator.io_utils import capture_multiline, display_snippet
+
+from investigator.cli_format import format_result
+from investigator.investigator import investigate as run_investigation
+from investigator.io_utils import capture_multiline
 
 app = typer.Typer()
+
 
 @app.callback()
 def main() -> None:
     """AI API Error Investigator — a developer tool for investigating AI API errors."""
-    
 
-@app.command()
-def investigate() -> None:
-    """Investigate an error (API route or database)."""
-    typer.echo("What would you like to do?")
-    typer.echo("1: Investigate API Route Error")
-    typer.echo("2: Investigate Database/SQLAlchemy Error")
 
-    choice = typer.prompt("Choose an option (1 or 2)", type=int)
-
-    if choice not in [1, 2]:
-        typer.secho("Invalid choice. Please run again and select 1 or 2.", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
-
-    raw_error = capture_multiline("\nPaste your multi-line error below.")
+@app.command("investigate")
+def investigate_command() -> None:
+    """Investigate an error pasted from stdin."""
+    raw_error = capture_multiline("\nPaste your error below.")
 
     if not raw_error:
-        typer.secho("\nNo error text captured. Exiting.", fg=typer.colors.RED)
+        typer.secho(
+            "\nNo error text captured. Exiting.",
+            fg=typer.colors.RED,
+        )
         raise typer.Exit(code=1)
 
-    typer.secho("\n✅ SUCCESS: ERROR CAPTURED SUCCESSFULLY", fg=typer.colors.GREEN, bold=True)
+    result = run_investigation(raw_error)
+    output = format_result(result)
 
-    typer.echo("\n--- Debug Info ---")
-    typer.echo(f"Selected Mode: {choice}")
-    typer.echo("Snippet of captured text:")
+    typer.echo("")
+    typer.echo(output)
 
-    display_snippet(raw_error)
+
+if __name__ == "__main__":
+    app()
