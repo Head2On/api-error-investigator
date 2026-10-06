@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re 
 from typing import TypedDict
 
@@ -10,13 +12,25 @@ class ParsedError(TypedDict):
     stack_trace: str
 
 _FRAME_RE = re.compile(
-    r'File "(?P<file>[^"]+)", line (?P<line>\d+), in (?P<function>\S+)'
+    r'File "(?P<file>[^"]+)", line (?P<line>\d+)(?:, in (?P<function>\S+))?'
 )
 
 _ERROR_LINE_RE = re.compile(
-    r'^(?P<error_type>[A-Za-z_][\w\.]*(?:Error|Exception|Warning|Exit))'
-    r'(?::\s*(?P<message>.*))?$'
+    r'^(?P<error_type>[A-Za-z_][\w\.]*)(?::\s*(?P<message>.*))?$'
 )
+
+_KNOWN_SUFFIXES = ("Error", "Exception", "Warning", "Exit")
+
+
+def _is_error_type_candidate(name: str) -> bool:
+    if not name:
+        return False
+
+    if name.endswith(_KNOWN_SUFFIXES):
+        return True
+
+    last_segment = name.rsplit(".", 1)[-1]
+    return bool(last_segment) and last_segment[0].isupper() and last_segment[0].isascii()
 
 def parse_error(raw_error: str) -> ParsedError:
     result: ParsedError = {
@@ -36,11 +50,15 @@ def parse_error(raw_error: str) -> ParsedError:
     error_line_index = None
     for i in range(len(lines) - 1, -1, -1):
         match = _ERROR_LINE_RE.match(lines[i].strip())
-        if match:
-            result["error_type"] = match.group("error_type")
-            result["message"] = match.group("message")
-            error_line_index = i
-            break
+        if not match:
+            continue
+        name = match.group("error_type")
+        if not _is_error_type_candidate(name):
+            continue
+        result["error_type"] = name
+        result["message"] = match.group("message")
+        error_line_index = i
+        break
 
     #Find the last frame
     search_until = error_line_index if error_line_index is not None else len(lines)
