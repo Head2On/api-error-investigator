@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from investigator.error_parser import ParsedError
-from investigator.knowledge_loader import KnowledgeEntry, load_all_entries
+from investigator.knowledge_loader import KnowledgeEntry, load_all_entries, KnowledgeEntryError
 
 
 # Module level cache
@@ -10,6 +10,34 @@ _BY_ALIAS: dict[str, KnowledgeEntry] | None = None
 
 def _build_index() -> None:
     global _BY_TYPE, _BY_ALIAS
+
+    entries = load_all_entries()
+
+    seen: dict[str, tuple[str, str]] = {}
+
+    for entry in entries:
+        primary = entry["error_type"]
+
+        # error_type ↔ anything
+        if primary in seen:
+            other_type, other_kind = seen[primary]
+            raise KnowledgeEntryError(
+                f"collision on identifier {primary!r}: "
+                f"appears as {other_kind} of {other_type!r} "
+                f"and as error_type of {primary!r}"
+            )
+        seen[primary] = (primary, "error_type")
+
+        # aliases ↔ anything (including each other within the same entry)
+        for alias in entry["aliases"]:
+            if alias in seen:
+                other_type, other_kind = seen[alias]
+                raise KnowledgeEntryError(
+                    f"collision on identifier {alias!r}: "
+                    f"appears as {other_kind} of {other_type!r} "
+                    f"and as alias of {primary!r}"
+                )
+            seen[alias] = (primary, "alias")
 
     by_type: dict[str, KnowledgeEntry] = {}
     by_alias: dict[str, KnowledgeEntry] = {}

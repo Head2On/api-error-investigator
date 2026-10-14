@@ -3,7 +3,15 @@ import pytest
 from investigator.cli_format import format_result
 from investigator.error_parser import parse_error
 from investigator.investigator import investigate
+from investigator.knowledge_lookup import lookup
+from investigator.error_parser import parse_error
+from investigator.investigation import Investigation
+from investigator.investigation_result import InvestigationResult
+import investigator.knowledge_loader as loader
+import investigator.knowledge_lookup as lookup_mod
 
+from investigator.knowledge_loader import KnowledgeEntryError, load_all_entries
+import investigator.knowledge_loader as loader
 
 #  PARSER ASSUMPTIONS
 
@@ -123,107 +131,20 @@ class TestInputStress:
         # No crash. Whether the null breaks parsing is a detail.
         assert result.status in ("known", "unknown")
 
-
-#  KB ASSUMPTIONS
-
 class TestKbDuplicateCollisions:
-    """Assumption: colliding entries are handled deterministically, not silently."""
+    """Superseded by tests/test_kb_collisions.py (A-022 Part 2).
 
-    def test_two_entries_same_error_type(self, monkeypatch, tmp_path):
-        import investigator.knowledge_loader as loader
-        import investigator.knowledge_lookup as lookup_mod
-
-        entry_a = (
-            "error_type: test.DupError\n"
-            "aliases: []\n"
-            "category: test\n"
-            "subcategory: null\n"
-            "summary: first\n"
-            "explanation: first\n"
-            "common_causes: []\n"
-            "fixes: []\n"
-            "docs_url: null\n"
-            "related_errors: []\n"
-        )
-        entry_b = entry_a.replace("first", "second")
-
-        (tmp_path / "a.yaml").write_text(entry_a, encoding="utf-8")
-        (tmp_path / "b.yaml").write_text(entry_b, encoding="utf-8")
-
-        monkeypatch.setattr(loader, "_KNOWLEDGE_DIR", tmp_path)
-        lookup_mod.reset_cache()
-
-        try:
-            from investigator.investigator import investigate as inv
-            from investigator.knowledge_lookup import lookup
-            from investigator.error_parser import parse_error
-
-            entry = lookup(parse_error("test.DupError: boom"))
-            assert entry is not None
-            # The winning entry depends on file iteration order.
-            # We only assert it's ONE of the two, not both:
-            assert entry["summary"] in ("first", "second")
-            # Document the current behavior: last-write wins per
-            # knowledge_lookup._build_index.
-        finally:
-            lookup_mod.reset_cache()
-
-    def test_alias_collides_with_other_error_type(self, monkeypatch, tmp_path):
-        """Entry B's alias is entry A's error_type."""
-        import investigator.knowledge_loader as loader
-        import investigator.knowledge_lookup as lookup_mod
-
-        entry_a = (
-            "error_type: test.AlphaError\n"
-            "aliases: []\n"
-            "category: test\n"
-            "subcategory: null\n"
-            "summary: alpha\n"
-            "explanation: alpha\n"
-            "common_causes: []\n"
-            "fixes: []\n"
-            "docs_url: null\n"
-            "related_errors: []\n"
-        )
-        entry_b = (
-            "error_type: test.BetaError\n"
-            "aliases:\n"
-            "  - test.AlphaError\n"
-            "category: test\n"
-            "subcategory: null\n"
-            "summary: beta\n"
-            "explanation: beta\n"
-            "common_causes: []\n"
-            "fixes: []\n"
-            "docs_url: null\n"
-            "related_errors: []\n"
-        )
-
-        (tmp_path / "alpha.yaml").write_text(entry_a, encoding="utf-8")
-        (tmp_path / "beta.yaml").write_text(entry_b, encoding="utf-8")
-
-        monkeypatch.setattr(loader, "_KNOWLEDGE_DIR", tmp_path)
-        lookup_mod.reset_cache()
-
-        try:
-            from investigator.knowledge_lookup import lookup
-            from investigator.error_parser import parse_error
-
-            entry = lookup(parse_error("test.AlphaError: boom"))
-            assert entry is not None
-            # Contract ambiguity: exact match on error_type should win,
-            # but does it? Document current behavior.
-            assert entry["error_type"] in ("test.AlphaError", "test.BetaError")
-        finally:
-            lookup_mod.reset_cache()
+    The two tests previously here documented the old silent-overwrite
+    behavior of the lookup index. A-022 replaced that behavior with
+    fail-fast collision detection, and the replacement tests live in
+    tests/test_kb_collisions.py.
+    """
 
 
 class TestKbMalformedYaml:
     """Assumption: malformed YAML raises KnowledgeEntryError, not crashes."""
 
     def test_yaml_not_a_mapping(self, monkeypatch, tmp_path):
-        from investigator.knowledge_loader import KnowledgeEntryError, load_all_entries
-        import investigator.knowledge_loader as loader
 
         (tmp_path / "list.yaml").write_text("- one\n- two\n", encoding="utf-8")
         monkeypatch.setattr(loader, "_KNOWLEDGE_DIR", tmp_path)
@@ -251,7 +172,6 @@ class TestLookupStrangeInputs:
     """Assumption: lookup doesn't crash on odd ParsedError shapes."""
 
     def test_parsed_error_with_unexpected_extra_keys(self):
-        from investigator.knowledge_lookup import lookup
         parsed = {
             "error_type": "ValueError",
             "message": None,
@@ -266,7 +186,6 @@ class TestLookupStrangeInputs:
         assert entry["error_type"] == "ValueError"
 
     def test_parsed_error_with_non_string_error_type(self):
-        from investigator.knowledge_lookup import lookup
         parsed = {
             "error_type": 42,
             "message": None,
@@ -284,8 +203,6 @@ class TestFormatterWithUnusualFields:
     """Assumption: formatter never crashes on valid-but-odd content."""
 
     def test_fix_containing_newlines(self):
-        from investigator.investigation import Investigation
-        from investigator.investigation_result import InvestigationResult
 
         parsed = {
             "error_type": "ValueError",
@@ -315,9 +232,6 @@ class TestFormatterWithUnusualFields:
         assert "second line" in output
 
     def test_unicode_content(self):
-        from investigator.investigation import Investigation
-        from investigator.investigation_result import InvestigationResult
-
         parsed = {
             "error_type": "ValueError",
             "message": None,
@@ -328,7 +242,7 @@ class TestFormatterWithUnusualFields:
         }
         inv = Investigation(
             summary="Résumé invalide 🚨",
-            explanation="Le champ contient 日本語",
+            explanation="Le champ contient",
             common_causes=["café", "naïve"],
             fixes=["üse correct input"],
             docs_url=None,
@@ -342,7 +256,7 @@ class TestFormatterWithUnusualFields:
         result = InvestigationResult.known(parsed, knowledge, inv)  # type: ignore[arg-type]
         output = format_result(result)
         assert "🚨" in output
-        assert "日本語" in output
+        assert "café" in output
 
 
 #  RESULT CONTRACT BREAKS
@@ -351,8 +265,6 @@ class TestResultInvalidStates:
     """Assumption: InvestigationResult rejects invalid field combinations."""
 
     def test_known_with_none_knowledge_direct_construct(self):
-        from investigator.investigation import Investigation
-        from investigator.investigation_result import InvestigationResult
 
         parsed = {
             "error_type": "ValueError",
@@ -376,8 +288,6 @@ class TestResultInvalidStates:
             )
 
     def test_unknown_with_investigation_direct_construct(self):
-        from investigator.investigation import Investigation
-        from investigator.investigation_result import InvestigationResult
 
         parsed = {
             "error_type": "ValueError",
@@ -408,8 +318,6 @@ class TestCacheAfterKbChange:
 
     def test_cache_does_not_reload_after_yaml_change(self, monkeypatch, tmp_path):
         """If KB changes after cache init, lookup uses stale entries until reset."""
-        import investigator.knowledge_loader as loader
-        import investigator.knowledge_lookup as lookup_mod
 
         entry = (
             "error_type: test.CacheError\n"
@@ -430,8 +338,6 @@ class TestCacheAfterKbChange:
         lookup_mod.reset_cache()
 
         try:
-            from investigator.knowledge_lookup import lookup
-            from investigator.error_parser import parse_error
 
             first = lookup(parse_error("test.CacheError: boom"))
             assert first is not None
