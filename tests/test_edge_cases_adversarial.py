@@ -9,6 +9,7 @@ from investigator.investigation import Investigation
 from investigator.investigation_result import InvestigationResult
 import investigator.knowledge_loader as loader
 import investigator.knowledge_lookup as lookup_mod
+from investigator import io_utils
 
 from investigator.knowledge_loader import KnowledgeEntryError, load_all_entries
 import investigator.knowledge_loader as loader
@@ -386,15 +387,24 @@ class TestIntegrationSequences:
 class TestCliInputBoundary:
     """Assumption: capture_multiline returns cleanly on immediate EOF / no DONE."""
 
+    @staticmethod
+    def _tty_stdin(monkeypatch):
+        class _Stub:
+            def isatty(self) -> bool:
+                return True
+            def read(self) -> str:
+                return ""
+        monkeypatch.setattr("sys.stdin", _Stub())
+
     def test_immediate_done(self, monkeypatch):
-        from investigator import io_utils
+        self._tty_stdin(monkeypatch)
         inputs = iter(["DONE"])
         monkeypatch.setattr("builtins.input", lambda *a, **k: next(inputs))
         result = io_utils.capture_multiline("prompt")
         assert result == ""
 
     def test_immediate_eof(self, monkeypatch):
-        from investigator import io_utils
+        self._tty_stdin(monkeypatch)
         def raise_eof(*a, **k):
             raise EOFError
         monkeypatch.setattr("builtins.input", raise_eof)
@@ -402,7 +412,7 @@ class TestCliInputBoundary:
         assert result == ""
 
     def test_no_done_but_eof(self, monkeypatch):
-        from investigator import io_utils
+        self._tty_stdin(monkeypatch)
         lines = iter(["line one", "line two"])
         def feed(*a, **k):
             try:

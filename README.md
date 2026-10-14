@@ -58,8 +58,12 @@ Paste your traceback when prompted, type `DONE` on a new line, and press Enter.
 ```
 src/investigator/
 ├── cli.py                 # CLI commands (Typer)
-├── io_utils.py            # input capture + display helpers
+├── cli_format.py          # terminal output formatting
 ├── error_parser.py        # traceback → structured ParsedError
+├── investigation.py       # domain model (Investigation)
+├── investigation_result.py# result contract and invariant validation
+├── investigator.py        # pipeline orchestrator: parse → lookup → result
+├── io_utils.py            # input capture + display helpers
 ├── knowledge_loader.py    # load + validate YAML KB entries
 ├── knowledge_lookup.py    # lookup(parsed_error) → entry | None
 └── knowledge/             # knowledge base (one YAML file per error)
@@ -69,7 +73,7 @@ src/investigator/
     ├── python_value_error.yaml
     └── python_key_error.yaml
 
-tests/                     # pytest suite (24 tests, all passing)
+tests/                     # pytest suite (65 tests, all passing)
 ```
 
 ## Development
