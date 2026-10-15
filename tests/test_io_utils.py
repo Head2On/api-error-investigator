@@ -154,3 +154,20 @@ class TestEmptyBehaviorEquivalence:
     def test_empty_pipe(self, monkeypatch):
         monkeypatch.setattr(sys, "stdin", _FakeStdin("", is_tty=False))
         assert capture_multiline("p") == ""
+
+
+# ==================================================== public surface check
+
+class TestModuleSurface:
+    """A-022 Part 5 — after display_snippet removal, io_utils exposes
+    exactly one public function: capture_multiline."""
+
+    def test_io_utils_exports_only_capture_multiline(self):
+        import investigator.io_utils as io_utils
+        public = {
+            name for name in dir(io_utils)
+            if not name.startswith("_")
+            and callable(getattr(io_utils, name))
+            and getattr(io_utils, name).__module__ == io_utils.__name__
+        }
+        assert public == {"capture_multiline"}

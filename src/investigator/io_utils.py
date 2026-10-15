@@ -21,16 +21,3 @@ def capture_multiline(prompt: str) -> str:
             break
             
     return "\n".join(lines).strip()
-
-def display_snippet(text: str, max_lines: int = 3) -> None:
-    """Print the first N lines of text, with a truncation marker if longer."""
-    lines = text.splitlines()
-    
-    typer.echo("----------------------------------------")
-    snippet = "\n".join(lines[:max_lines])
-    typer.echo(snippet)
-    
-    if len(lines) > max_lines:
-        typer.echo("... [truncated]")
-        
-    typer.echo("----------------------------------------")
