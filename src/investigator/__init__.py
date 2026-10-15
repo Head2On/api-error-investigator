@@ -1,3 +1,6 @@
+"""AI API Error Investigator — core package.
+Exposes public API symbols for investigating and diagnosing errors.
+"""
 
 from investigator.error_parser import ParsedError
 from investigator.investigation import Investigation

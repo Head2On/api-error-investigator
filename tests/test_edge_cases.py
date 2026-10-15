@@ -81,22 +81,23 @@ class TestMissingMessage:
     """Assumption: error_type without a message is still recognized."""
 
     def test_error_type_without_message(self):
-        """'ValueError' alone — no colon, no message."""
+        """'ValueError' alone — bare candidate identifier in KB."""
         result = investigate("ValueError")
-    
-        if result.status == "known":
-            assert result.parsed_error["error_type"] == "ValueError"
-            assert result.parsed_error["message"] is None
+        assert result.status == "known"
+        assert result.parsed_error["error_type"] == "ValueError"
+        assert result.parsed_error["message"] is None
 
     def test_error_type_with_empty_message(self):
         result = investigate("ValueError:")
-        if result.status == "known":
-            assert result.parsed_error["error_type"] == "ValueError"
-            assert result.parsed_error["message"] in (None, "")
+        assert result.status == "known"
+        assert result.parsed_error["error_type"] == "ValueError"
+        assert result.parsed_error["message"] == ""
 
     def test_error_type_with_only_whitespace_message(self):
         result = investigate("ValueError:    ")
-        assert result.status in ("known", "unknown")
+        assert result.status == "known"
+        assert result.parsed_error["error_type"] == "ValueError"
+        assert result.parsed_error["message"] == ""
 
 
 #  4. unusual multiline
@@ -230,20 +231,20 @@ class TestUnusualErrorTypes:
     def test_name_with_unicode(self):
         raw = "Module.ÜnicodeError: boom"
         result = investigate(raw)
-
-        assert result.status in ("known", "unknown")
+        assert result.status == "unknown"
+        assert result.parsed_error["error_type"] == "Module.ÜnicodeError"
 
     def test_error_type_with_trailing_whitespace(self):
+        """Whitespace before colon fails error line format -> unrecognized/unknown."""
         result = investigate("ValueError  :  something")
-       
-        assert result.status in ("known", "unknown")
+        assert result.status == "unknown"
+        assert result.parsed_error["error_type"] is None
 
     def test_error_type_lowercase(self):
-        """'valueError: boom' — parser regex accepts any [A-Za-z_] start."""
+        """'valueError: boom' — matches candidate rule via suffix 'Error', but unknown in KB."""
         result = investigate("valueError: boom")
-        
-        if result.parsed_error["error_type"] is not None:
-            assert result.parsed_error["error_type"] == "valueError"
+        assert result.status == "unknown"
+        assert result.parsed_error["error_type"] == "valueError"
 
 
 #  8. format boundary conditions

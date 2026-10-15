@@ -1,7 +1,10 @@
+"""Investigation result envelope and invariant validation."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Literal
+
 from investigator.error_parser import ParsedError
 from investigator.investigation import Investigation
 from investigator.knowledge_loader import KnowledgeEntry
@@ -12,6 +15,13 @@ Status = Literal["known", "unknown"]
 
 @dataclass
 class InvestigationResult:
+    """Envelope representing the outcome of an error investigation.
+
+    Invariants:
+    - If status == 'known': knowledge and investigation must both be present.
+    - If status == 'unknown': knowledge and investigation must both be None.
+    """
+
     status: Status
     parsed_error: ParsedError
     knowledge: KnowledgeEntry | None
@@ -43,14 +53,15 @@ class InvestigationResult:
                     "status='unknown' requires investigation=None, "
                     f"got {type(self.investigation).__name__}"
                 )
-            
+
     @classmethod
     def known(
-        cls, 
+        cls,
         parsed_error: ParsedError,
         knowledge: KnowledgeEntry,
         investigation: Investigation,
     ) -> "InvestigationResult":
+        """Factory constructor for known error results."""
         return cls(
             status="known",
             parsed_error=parsed_error,
@@ -60,6 +71,7 @@ class InvestigationResult:
 
     @classmethod
     def unknown(cls, parsed_error: ParsedError) -> "InvestigationResult":
+        """Factory constructor for unknown error results."""
         return cls(
             status="unknown",
             parsed_error=parsed_error,

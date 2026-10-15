@@ -83,6 +83,34 @@ def test_wrong_type_raises(monkeypatch, tmp_path):
     with pytest.raises(KnowledgeEntryError, match="must be str"):
         loader.load_all_entries()
 
+
+def test_wrong_optional_type_raises(monkeypatch, tmp_path):
+    bad = tmp_path / "bad_optional.yaml"
+    bad.write_text(
+        "error_type: test.BadOptional\n"
+        "aliases: []\n"
+        "category: test\n"
+        "subcategory: 999\n"  # must be str or null
+        "summary: s\n"
+        "explanation: e\n"
+        "common_causes: []\n"
+        "fixes: []\n"
+        "related_errors: []\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(loader, "_KNOWLEDGE_DIR", tmp_path)
+
+    with pytest.raises(KnowledgeEntryError, match="field 'subcategory' must be str or null"):
+        loader.load_all_entries()
+
+
+def test_nonexistent_knowledge_dir_returns_empty(monkeypatch, tmp_path):
+    missing_dir = tmp_path / "does_not_exist"
+    monkeypatch.setattr(loader, "_KNOWLEDGE_DIR", missing_dir)
+    assert loader.load_all_entries() == []
+
+
 def test_all_starter_entries_load_and_validate():
     entries = load_all_entries()
     by_type = {e["error_type"]: e for e in entries}

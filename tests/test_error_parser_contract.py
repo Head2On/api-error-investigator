@@ -51,6 +51,11 @@ def test_non_candidates_rejected(line):
     assert result["error_type"] is None
 
 
+def test_is_error_type_candidate_empty():
+    from investigator.error_parser import _is_error_type_candidate
+    assert _is_error_type_candidate("") is False
+
+
 #  boundary cases
 # explicit per partner's request
 

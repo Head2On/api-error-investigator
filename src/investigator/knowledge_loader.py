@@ -1,3 +1,5 @@
+"""Knowledge base YAML file loader and schema validator."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -5,7 +7,9 @@ from typing import TypedDict
 
 import yaml
 
+
 class KnowledgeEntry(TypedDict):
+    """Schema for a curated knowledge base entry."""
 
     error_type: str
     aliases: list[str]
@@ -43,6 +47,7 @@ class KnowledgeEntryError(Exception):
 
 
 def _validate_entry(path: Path, raw: dict) -> KnowledgeEntry:
+    """Validate a parsed YAML dict against KnowledgeEntry schema constraints."""
     for key, expected_type in _REQUIRED.items():
         if key not in raw:
             raise KnowledgeEntryError(
@@ -66,7 +71,9 @@ def _validate_entry(path: Path, raw: dict) -> KnowledgeEntry:
 
     return raw  # type: ignore
 
+
 def load_all_entries() -> list[KnowledgeEntry]:
+    """Load and validate all knowledge base YAML entries from the knowledge directory."""
     entries: list[KnowledgeEntry] = []
 
     if not _KNOWLEDGE_DIR.exists():

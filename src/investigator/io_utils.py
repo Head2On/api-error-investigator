@@ -1,8 +1,12 @@
+"""Input capture utilities for interactive and piped terminal input."""
+
 import sys
 
 import typer
 
+
 def capture_multiline(prompt: str) -> str:
+    """Capture multiline input from stdin (supports both interactive TTY and pipes)."""
 
     if not sys.stdin.isatty():
         return sys.stdin.read().strip()

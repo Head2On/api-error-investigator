@@ -2,17 +2,15 @@ import pytest
 
 from investigator.cli_format import format_result
 from investigator.error_parser import parse_error
-from investigator.investigator import investigate
-from investigator.knowledge_lookup import lookup
-from investigator.error_parser import parse_error
 from investigator.investigation import Investigation
 from investigator.investigation_result import InvestigationResult
-import investigator.knowledge_loader as loader
-import investigator.knowledge_lookup as lookup_mod
+from investigator.investigator import investigate
 from investigator import io_utils
-
-from investigator.knowledge_loader import KnowledgeEntryError, load_all_entries
 import investigator.knowledge_loader as loader
+from investigator.knowledge_loader import KnowledgeEntryError, load_all_entries
+import investigator.knowledge_lookup as lookup_mod
+from investigator.knowledge_lookup import lookup
+
 
 #  PARSER ASSUMPTIONS
 
@@ -20,15 +18,15 @@ class TestParserWeirdSpacing:
     """Assumption: parser tolerates spacing variations on the error line."""
 
     def test_error_line_with_extra_spaces_before_colon(self):
-        """'ValueError   :   msg' — is the error type still detected?"""
+        """'ValueError   :   msg' — space before colon does not match error line format."""
         result = parse_error("ValueError   :   msg")
-        # Regex expects ': ' immediately after type. Extra spaces may break.
-        # Whatever the outcome is, it must be documented behavior.
-        assert result["error_type"] in (None, "ValueError")
+        assert result["error_type"] is None
 
     def test_error_line_with_trailing_whitespace_only(self):
+        """'ValueError:    ' matches with empty message."""
         result = parse_error("ValueError:    ")
-        assert result["error_type"] in (None, "ValueError")
+        assert result["error_type"] == "ValueError"
+        assert result["message"] == ""
 
     def test_error_line_with_leading_whitespace(self):
         """Error line indented — common when copied from a log."""
@@ -79,11 +77,8 @@ class TestParserErrorNameInProse:
     def test_error_name_in_sentence_with_colon(self):
         raw = "The error was ValueError: invalid input"
         result = parse_error(raw)
-        # Does the parser match this? Depends on ^...$ anchoring.
-        # If it matches, error_type will be 'ValueError'.
-        # If not, error_type is None.
-        # Either is acceptable IF documented.
-        assert result["error_type"] in (None, "ValueError")
+        # Starts with "The error was ", not an error type line.
+        assert result["error_type"] is None
 
     def test_sentences_that_look_like_traceback_headers_only(self):
         raw = "Traceback (most recent call last):\nbut no error line follows"
@@ -122,31 +117,21 @@ class TestInputStress:
         )
         raw = block * 5000  # ~1 MB
         result = investigate(raw)
-        # Parser scans bottom-up — should still find the last error line.
-        assert result.status in ("known", "unknown")
-        # Most important: it returned at all, without hanging or crashing.
+        # Parser scans bottom-up — finds the last error line, which is known.
+        assert result.status == "known"
+        assert result.parsed_error["error_type"] == "ValueError"
 
     def test_input_with_null_bytes(self):
         raw = "ValueError: bad\x00data"
         result = investigate(raw)
-        # No crash. Whether the null breaks parsing is a detail.
-        assert result.status in ("known", "unknown")
-
-class TestKbDuplicateCollisions:
-    """Superseded by tests/test_kb_collisions.py (A-022 Part 2).
-
-    The two tests previously here documented the old silent-overwrite
-    behavior of the lookup index. A-022 replaced that behavior with
-    fail-fast collision detection, and the replacement tests live in
-    tests/test_kb_collisions.py.
-    """
+        assert result.status == "known"
+        assert result.parsed_error["error_type"] == "ValueError"
 
 
 class TestKbMalformedYaml:
     """Assumption: malformed YAML raises KnowledgeEntryError, not crashes."""
 
     def test_yaml_not_a_mapping(self, monkeypatch, tmp_path):
-
         (tmp_path / "list.yaml").write_text("- one\n- two\n", encoding="utf-8")
         monkeypatch.setattr(loader, "_KNOWLEDGE_DIR", tmp_path)
 
@@ -154,9 +139,6 @@ class TestKbMalformedYaml:
             load_all_entries()
 
     def test_yaml_syntax_error(self, monkeypatch, tmp_path):
-        from investigator.knowledge_loader import KnowledgeEntryError, load_all_entries
-        import investigator.knowledge_loader as loader
-
         (tmp_path / "broken.yaml").write_text(
             "error_type: : :\n  bad indent\n-",
             encoding="utf-8",

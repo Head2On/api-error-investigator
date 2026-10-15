@@ -1,3 +1,5 @@
+"""Terminal presentation and formatting for investigation results."""
+
 from __future__ import annotations
 
 from investigator.investigation_result import InvestigationResult
@@ -13,6 +15,7 @@ def format_result(result: InvestigationResult) -> str:
 # ----------------------------------------------------------------- known
 
 def _format_known(result: InvestigationResult) -> str:
+    """Format a known investigation result into human-readable sections."""
     parsed = result.parsed_error
     inv = result.investigation
 
@@ -65,6 +68,7 @@ def _format_known(result: InvestigationResult) -> str:
 # --------------------------------------------------------------- unknown
 
 def _format_unknown(result: InvestigationResult) -> str:
+    """Format an unknown investigation result for terminal display."""
     parsed = result.parsed_error
     error_type = parsed["error_type"] if parsed["error_type"] else "(unrecognized)"
 

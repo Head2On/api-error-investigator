@@ -1,3 +1,5 @@
+"""Deterministic investigation orchestrator."""
+
 from __future__ import annotations
 
 from investigator.error_parser import ParsedError, parse_error
@@ -7,6 +9,7 @@ from investigator.knowledge_lookup import lookup
 
 
 def investigate(raw_error: str) -> InvestigationResult:
+    """Investigate a raw traceback or error string deterministically."""
     parsed: ParsedError = parse_error(raw_error)
 
     knowledge = lookup(parsed)

@@ -1,3 +1,5 @@
+"""Knowledge base in-memory indexing and lookup engine."""
+
 from __future__ import annotations
 
 from investigator.error_parser import ParsedError
@@ -8,7 +10,9 @@ from investigator.knowledge_loader import KnowledgeEntry, load_all_entries, Know
 _BY_TYPE: dict[str, KnowledgeEntry] | None = None
 _BY_ALIAS: dict[str, KnowledgeEntry] | None = None
 
+
 def _build_index() -> None:
+    """Build in-memory indexes and detect identifier collisions across KB entries."""
     global _BY_TYPE, _BY_ALIAS
 
     entries = load_all_entries()
@@ -42,7 +46,7 @@ def _build_index() -> None:
     by_type: dict[str, KnowledgeEntry] = {}
     by_alias: dict[str, KnowledgeEntry] = {}
 
-    for entry in load_all_entries():
+    for entry in entries:
         by_type[entry["error_type"]] = entry
         for alias in entry["aliases"]:
             by_alias[alias] = entry
@@ -50,8 +54,8 @@ def _build_index() -> None:
     _BY_TYPE = by_type
     _BY_ALIAS = by_alias
 
-# for tests 
 def reset_cache() -> None:
+    """Clear in-memory lookup cache (intended for tests)."""
     global _BY_TYPE, _BY_ALIAS
     _BY_TYPE = None
     _BY_ALIAS = None

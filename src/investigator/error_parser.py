@@ -1,15 +1,20 @@
+"""Traceback and error line parsing utilities."""
+
 from __future__ import annotations
 
-import re 
+import re
 from typing import TypedDict
 
+
 class ParsedError(TypedDict):
+    """Structured representation of parsed error details from a traceback."""
     error_type: str | None
     message: str | None
     file: str | None
     line: int | None
     function: str | None
     stack_trace: str
+
 
 _FRAME_RE = re.compile(
     r'File "(?P<file>[^"]+)", line (?P<line>\d+)(?:, in (?P<function>\S+))?'
@@ -23,6 +28,7 @@ _KNOWN_SUFFIXES = ("Error", "Exception", "Warning", "Exit")
 
 
 def _is_error_type_candidate(name: str) -> bool:
+    """Determine whether a parsed identifier qualifies as an error candidate."""
     if not name:
         return False
 
@@ -32,7 +38,9 @@ def _is_error_type_candidate(name: str) -> bool:
     last_segment = name.rsplit(".", 1)[-1]
     return bool(last_segment) and last_segment[0].isupper() and last_segment[0].isascii()
 
+
 def parse_error(raw_error: str) -> ParsedError:
+    """Parse raw traceback or error text into a structured ParsedError."""
     result: ParsedError = {
         "error_type": None,
         "message": None,

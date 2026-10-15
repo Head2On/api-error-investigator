@@ -1,3 +1,5 @@
+"""CLI commands and entry point for ai-investigate."""
+
 import typer
 
 from investigator.cli_format import format_result
