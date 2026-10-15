@@ -1,4 +1,4 @@
-# AI API Error Investigator
+# API Error Investigator
 
 A CLI developer tool that investigates API and database errors by parsing
 tracebacks, matching them against a curated knowledge base, and returning a
