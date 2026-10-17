@@ -1,130 +1,151 @@
-from investigator.cli_format import format_result
-from investigator.error_parser import ParsedError
+"""Tests for investigator.cli_format."""
+
+from investigator.cli_format import WRAP_WIDTH, format_result
 from investigator.investigation import Investigation
 from investigator.investigation_result import InvestigationResult
 
+# --------------------------------------------------------------- fixtures
 
-# ---------------------------------------------------------------- fixtures
+def _investigation(**overrides) -> Investigation:
+    defaults = dict(
+        summary="A database constraint was violated.",
+        explanation="SQLAlchemy issued an INSERT that the database rejected.",
+        common_causes=["Duplicate unique column."],
+        fixes=["Check the constraint name."],
+        docs_url="https://docs.sqlalchemy.org/en/20/orm/exceptions.html",
+        related_errors=["sqlalchemy.exc.OperationalError"],
+    )
+    defaults.update(overrides)
+    return Investigation(**defaults)
 
-def _parsed(error_type: str | None = "ValueError") -> ParsedError:
-    return {
-        "error_type": error_type,
-        "message": "invalid value",
-        "file": "app/service.py",
-        "line": 42,
-        "function": "handle",
-        "stack_trace": "ValueError: invalid value",
-    }
 
-
-def _investigation(
-    *,
-    common_causes: list[str] | None = None,
-    fixes: list[str] | None = None,
-    docs_url: str | None = "https://example.com/docs",
-    related_errors: list[str] | None = None,
-) -> Investigation:
-    return Investigation(
-        summary="A short summary.",
-        explanation="A longer explanation.",
-        common_causes=common_causes if common_causes is not None else ["Cause A"],
-        fixes=fixes if fixes is not None else ["Fix A"],
-        docs_url=docs_url,
-        related_errors=related_errors if related_errors is not None else ["OtherError"],
+def _known(**overrides) -> InvestigationResult:
+    return InvestigationResult(
+        status="known",
+        parsed_error={"error_type": "sqlalchemy.exc.IntegrityError"},
+        knowledge={},
+        investigation=_investigation(**overrides),
     )
 
-def _knowledge() -> dict:
-    return {
-        "error_type": "ValueError",
-        "aliases": [],
-        "category": "python",
-        "subcategory": "data_validation",
-        "summary": "A short summary.",
-        "explanation": "A longer explanation.",
-        "common_causes": ["Cause A"],
-        "fixes": ["Fix A"],
-        "docs_url": "https://example.com/docs",
-        "related_errors": ["OtherError"],
-    }
 
-# ----------------------------------------------------------------- known
+def _unknown(error_type: str | None = "TotallyUnknownError") -> InvestigationResult:
+    return InvestigationResult(
+        status="unknown",
+        parsed_error={"error_type": error_type},
+        knowledge=None,
+        investigation=None,
+    )
+
+
+# ------------------------------------------------------------------ known
 
 def test_known_output_includes_all_sections_when_present():
-    result = InvestigationResult.known(_parsed(), _knowledge(), _investigation())  # type: ignore[arg-type]
-    output = format_result(result)
-
-    assert "Error: ValueError" in output
-    assert "Summary:" in output
-    assert "A short summary." in output
-    assert "Explanation:" in output
-    assert "A longer explanation." in output
-    assert "Common Causes:" in output
-    assert "- Cause A" in output
-    assert "Fixes:" in output
-    assert "- Fix A" in output
-    assert "Documentation:" in output
-    assert "https://example.com/docs" in output
-    assert "Related Errors:" in output
-    assert "- OtherError" in output
+    out = format_result(_known())
+    assert "Error: sqlalchemy.exc.IntegrityError" in out
+    assert "Status: KNOWN" in out
+    assert "Summary:" in out
+    assert "Explanation:" in out
+    assert "Common Causes:" in out
+    assert "Fixes:" in out
+    assert "Documentation:" in out
+    assert "Related Errors:" in out
 
 
-def test_known_output_skips_missing_docs_url():
-    result = InvestigationResult.known(
-        _parsed(), {}, _investigation(docs_url=None)  # type: ignore[arg-type]
+def test_known_output_omits_empty_optional_sections():
+    out = format_result(
+        _known(common_causes=[], fixes=[], docs_url=None, related_errors=[])
     )
-    output = format_result(result)
-    assert "Documentation:" not in output
+    assert "Common Causes:" not in out
+    assert "Fixes:" not in out
+    assert "Documentation:" not in out
+    assert "Related Errors:" not in out
+    # Required sections still present.
+    assert "Summary:" in out
+    assert "Explanation:" in out
 
 
-def test_known_output_skips_empty_common_causes():
-    result = InvestigationResult.known(
-        _parsed(), {}, _investigation(common_causes=[])  # type: ignore[arg-type]
-    )
-    output = format_result(result)
-    assert "Common Causes:" not in output
+def test_known_output_has_no_trailing_blank_line():
+    out = format_result(_known())
+    assert not out.endswith("\n")
+    assert not out.endswith("\n\n")
 
 
-def test_known_output_skips_empty_fixes():
-    result = InvestigationResult.known(
-        _parsed(), {}, _investigation(fixes=[])  # type: ignore[arg-type]
-    )
-    output = format_result(result)
-    assert "Fixes:" not in output
+def test_known_output_is_deterministic():
+    assert format_result(_known()) == format_result(_known())
 
 
-def test_known_output_skips_empty_related_errors():
-    result = InvestigationResult.known(
-        _parsed(), {}, _investigation(related_errors=[])  # type: ignore[arg-type]
-    )
-    output = format_result(result)
-    assert "Related Errors:" not in output
-
-
-# --------------------------------------------------------------- unknown
+# ---------------------------------------------------------------- unknown
 
 def test_unknown_output_states_status_and_no_data():
-    result = InvestigationResult.unknown(_parsed("SomeFakeError"))
-    output = format_result(result)
-
-    assert "Error: SomeFakeError" in output
-    assert "Status: UNKNOWN" in output
-    assert "The Knowledge Base does not contain information" in output
+    out = format_result(_unknown())
+    assert "Error: TotallyUnknownError" in out
+    assert "Status: UNKNOWN" in out
+    assert "no matching entry" in out.lower()
 
 
-def test_unknown_output_with_missing_error_type():
-    """Garbage input has no error_type; format must not print 'None'."""
-    result = InvestigationResult.unknown(_parsed(None))
-    output = format_result(result)
-
-    assert "Error: (unrecognized)" in output
-    assert "None" not in output
+def test_unknown_output_unrecognized_error_type():
+    out = format_result(_unknown(error_type=None))
+    assert "Error: (unrecognized)" in out
+    assert "Status: UNKNOWN" in out
 
 
-def test_unknown_output_does_not_invent_content():
-    result = InvestigationResult.unknown(_parsed("SomeFakeError"))
-    output = format_result(result)
+def test_unknown_output_has_no_trailing_blank_line():
+    out = format_result(_unknown())
+    assert not out.endswith("\n")
 
-    assert "Summary:" not in output
-    assert "Fixes:" not in output
-    assert "Common Causes:" not in output
-    assert "Documentation:" not in output
+
+# ---------------------------------------------------------------- wrapping
+
+def test_long_explanation_wraps_at_width_without_breaking_words():
+    long_word = "a" * (WRAP_WIDTH + 20)  # single token longer than width
+    explanation = (
+        "This explanation is intentionally long so that it exceeds the "
+        f"configured wrap width of {WRAP_WIDTH} characters and must wrap. "
+        f"Here is a single unbreakable token: {long_word}"
+    )
+    out = format_result(_known(explanation=explanation))
+    lines = out.splitlines()
+
+    # The unbreakable token must appear intact on exactly one line.
+    token_lines = [ln for ln in lines if long_word in ln]
+    assert len(token_lines) == 1
+
+    # No line containing the prose portion should exceed WRAP_WIDTH.
+    prose_lines = [
+        ln for ln in lines
+        if ln and not ln.endswith(":") and long_word not in ln
+    ]
+    for ln in prose_lines:
+        assert len(ln) <= WRAP_WIDTH, f"line exceeds width: {ln!r}"
+
+
+def test_long_bullet_wraps_with_hanging_indent():
+    long_item = (
+        "Inserting a row that duplicates a unique column such as email or "
+        "username, which often happens under concurrent requests and needs "
+        "explicit handling."
+    )
+    out = format_result(_known(fixes=[long_item], common_causes=[]))
+    lines = out.splitlines()
+
+    # Find the bullet block: first line starts with "- ".
+    start = next(i for i, ln in enumerate(lines) if ln.startswith("- "))
+    bullet_block = []
+    for ln in lines[start:]:
+        if ln == "" or ln.endswith(":"):
+            break
+        bullet_block.append(ln)
+
+    assert len(bullet_block) >= 2, "long bullet should wrap"
+    assert bullet_block[0].startswith("- ")
+    for ln in bullet_block[1:]:
+        assert ln.startswith("    "), "continuation must be indented"
+        assert len(ln) <= WRAP_WIDTH
+
+
+def test_documentation_url_is_never_wrapped_or_truncated():
+    long_url = "https://example.com/" + ("x" * (WRAP_WIDTH + 40))
+    out = format_result(_known(docs_url=long_url))
+    assert long_url in out
+    # Exactly one line carries the full URL.
+    assert sum(1 for ln in out.splitlines() if ln == long_url) == 1

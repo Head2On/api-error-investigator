@@ -1,5 +1,5 @@
 [project]
-name = "api-error-investigator"
+name = "error-investigator"
 version = "0.1.0"
 description = "A CLI developer tool for investigating API errors"
 readme = "README.md"
