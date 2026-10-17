@@ -1,8 +1,5 @@
 # API Error Investigator
 
-# Error Investigator
- c15f138 (Update the UX and investigation the entry point,mods and update the readme)
-
 A CLI developer tool that investigates Python and API errors by parsing
 tracebacks, matching them against a curated knowledge base, and returning a
 structured, deterministic diagnosis.
