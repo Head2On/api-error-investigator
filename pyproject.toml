@@ -1,7 +1,7 @@
 [project]
-name = "ai-api-error-investigator"
+name = "api-error-investigator"
 version = "0.1.0"
-description = "A CLI developer tool for investigating AI API errors"
+description = "A CLI developer tool for investigating API errors"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ai-investigate = "investigator.cli:app"
+investigate = "investigator.cli:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]

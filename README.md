@@ -1,26 +1,29 @@
+<<<<<<< HEAD
 # API Error Investigator
+=======
+# Error Investigator
+>>>>>>> c15f138 (Update the UX and investigation the entry point,mods and update the readme)
 
-A CLI developer tool that investigates API and database errors by parsing
+A CLI developer tool that investigates Python and API errors by parsing
 tracebacks, matching them against a curated knowledge base, and returning a
 structured, deterministic diagnosis.
 
 **Status:** Early development (Chunk A complete). Deterministic engine works
-end-to-end. AI-assisted investigation is planned for a later chunk.
+end-to-end.
 
 ## Why
 
-When an AI-powered API fails in production, the developer is stuck with a
+When an API fails in production, the developer is stuck with a
 raw traceback and no fast path to a fix. Generic LLM wrappers produce vague
 answers. This tool takes a different approach:
 
 - **Deterministic first.** A curated knowledge base handles known errors
   instantly, offline, with zero cost.
-- **AI second.** AI is only invoked when the knowledge base has no answer —
-  and only when the user opts in.
 - **Honest by design.** Unknown errors return "I don't know." The tool never
   fabricates a diagnosis.
 
 ## How it works
+
 
 ```
 raw error
@@ -38,7 +41,7 @@ KnowledgeEntry  |  None
 
 ```bash
 git clone https://github.com/Head2On/api-error-investigator.git
-cd ai-api-error-investigator
+cd api-error-investigator
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\Activate
 pip install -e .
@@ -47,8 +50,8 @@ pip install -e .
 ## Usage
 
 ```bash
-ai-investigate --help
-ai-investigate investigate
+investigate --help
+investigate investigate
 ```
 
 Paste your traceback when prompted, type `DONE` on a new line, and press Enter.

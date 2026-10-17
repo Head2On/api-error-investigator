@@ -1,4 +1,4 @@
-"""CLI commands and entry point for ai-investigate."""
+"""CLI commands and entry point for error-investigator."""
 
 import typer
 
@@ -9,14 +9,8 @@ from investigator.io_utils import capture_multiline
 app = typer.Typer()
 
 
-@app.callback()
-def main() -> None:
-    """AI API Error Investigator — a developer tool for investigating AI API errors."""
-
-
-@app.command("investigate")
-def investigate_command() -> None:
-    """Investigate an error pasted from stdin."""
+def _run_workflow() -> None:
+    """Capture an error, investigate it, and print the formatted result."""
     raw_error = capture_multiline("\nPaste your error below.")
 
     if not raw_error:
@@ -31,6 +25,14 @@ def investigate_command() -> None:
 
     typer.echo("")
     typer.echo(output)
+
+
+@app.callback(invoke_without_command=True)
+def main(ctx:typer.Context) -> None:
+    """Error Investigator — a CLI developer tool for investigating Python and API errors"""
+
+    if ctx.invoked_subcommand is None:
+        _run_workflow()
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""AI API Error Investigator — core package.
+"""Error Investigator — core package.
 Exposes public API symbols for investigating and diagnosing errors.
 """
 
