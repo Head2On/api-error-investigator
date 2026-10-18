@@ -16,7 +16,7 @@ common_causes:
   - "Iterating and deleting keys at the same time."
   - "A dict populated from JSON/API response missing an expected key."
   - "Typo in the key string."
-  - "Case sensitivity — 'Name' vs 'name'."
+  - "Case sensitivity -- 'Name' vs 'name'."
 
 fixes:
   - "Use my_dict.get(key, default) when the key may not exist."

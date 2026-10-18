@@ -17,7 +17,7 @@ common_causes:
   - "A race condition where two requests insert the same key."
 
 fixes:
-  - "Check the constraint name in the error message — it tells you which column."
+  - "Check the constraint name in the error message -- it tells you which column."
   - "For duplicates: query the table first, or use an upsert (ON CONFLICT DO NOTHING/UPDATE)."
   - "For foreign keys: ensure the parent row is committed before the child insert."
   - "For NULL violations: set the column value or give it a DB-level default."

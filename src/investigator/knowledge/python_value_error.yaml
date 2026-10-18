@@ -8,7 +8,7 @@ summary: "A function received a value of the correct type but with an invalid co
 explanation: >
   ValueError means the argument had the right type, but the value itself was
   not acceptable to the function. It's not a type error (which would mean the
-  wrong type was passed) — it's a content error. Built-in functions, int(),
+  wrong type was passed) -- it's a content error. Built-in functions, int(),
   float(), datetime parsing, and many libraries raise it for malformed input.
 common_causes:
   - "Calling int(\"abc\") or float(\"12.3.4\") on non-numeric strings."
@@ -18,7 +18,7 @@ common_causes:
   - "Iterating over a closed file or reading from a closed resource."
 
 fixes:
-  - "Read the error message — Python's ValueError almost always states what's wrong."
+  - "Read the error message -- Python's ValueError almost always states what's wrong."
   - "Wrap the call in try/except and validate input before passing it in."
   - "If parsing user input, use a parser that returns a result type instead (e.g. Pydantic)."
   - "Check the argument at the call site, not deep inside the function."
