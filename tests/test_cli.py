@@ -298,3 +298,52 @@ def test_cli_module_main_execution(monkeypatch):
     with pytest.raises(SystemExit) as exc_info:
         runpy.run_module("investigator.cli", run_name="__main__")
     assert exc_info.value.code == 0
+
+def test_cli_custom_kb_dir_empty_fails_before_prompt(tmp_path):
+    """Empty explicit dir must fail before prompting the user for input."""
+    result = runner.invoke(app, ["--kb-dir", str(tmp_path)])  # no input=
+    assert result.exit_code == 1
+    assert "contains no entries" in result.output
+    assert "Paste your error below" not in result.output
+    _assert_no_traceback(result.output)
+
+
+def test_cli_custom_kb_dir_malformed_fails_before_prompt(tmp_path):
+    (tmp_path / "bad.yaml").write_text("invalid: [yaml\n", encoding="utf-8")
+    result = runner.invoke(app, ["--kb-dir", str(tmp_path)])  # no input=
+    assert result.exit_code == 1
+    assert "invalid YAML" in result.output
+    assert "Paste your error below" not in result.output
+    _assert_no_traceback(result.output)
+
+
+def test_cli_custom_kb_dir_collision_fails_before_prompt(tmp_path):
+    _write_valid_entry(tmp_path, error_type="DupError")
+    (tmp_path / "dup.yaml").write_text(
+        "error_type: DupError\n"
+        "aliases: []\n"
+        "category: custom\n"
+        "summary: custom summary 2\n"
+        "explanation: custom explanation 2\n"
+        "common_causes: []\n"
+        "fixes: []\n"
+        "related_errors: []\n",
+        encoding="utf-8",
+    )
+    result = runner.invoke(app, ["--kb-dir", str(tmp_path)])  # no input=
+    assert result.exit_code == 1
+    assert "collision on identifier" in result.output
+    assert "Paste your error below" not in result.output
+    _assert_no_traceback(result.output)
+
+
+def test_cli_default_kb_corrupted_raises(monkeypatch, tmp_path):
+    import investigator.knowledge_loader as loader
+    import investigator.knowledge_lookup as lookup_mod
+    monkeypatch.setattr(loader, "_KNOWLEDGE_DIR", tmp_path)
+    lookup_mod.reset_cache()
+    (tmp_path / "bad.yaml").write_text("invalid: [yaml\n", encoding="utf-8")
+    result = runner.invoke(app, [], input="ValueError: err\n")
+    assert result.exit_code == 1
+    assert "Knowledge base error:" in result.output
+    _assert_no_traceback(result.output)

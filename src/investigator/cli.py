@@ -8,6 +8,7 @@ from investigator.cli_format import format_result
 from investigator.investigator import investigate as run_investigation
 from investigator.io_utils import capture_multiline
 from investigator.knowledge_loader import KnowledgeEntryError
+from investigator.knowledge_lookup import validate_knowledge_base
 
 app = typer.Typer(name="investigate")
 
@@ -15,18 +16,11 @@ app = typer.Typer(name="investigate")
 def _run_workflow(kb_dir: Path | None = None) -> None:
     """Capture an error, investigate it, and print the formatted result."""
     if kb_dir is not None:
-        if not kb_dir.exists():
-            typer.secho(
-                f"\nKnowledge base error: knowledge directory does not exist: {kb_dir}",
-                fg=typer.colors.RED,
-            )
-            raise typer.Exit(code=1)
-        if not kb_dir.is_dir():
-            typer.secho(
-                f"\nKnowledge base error: knowledge directory is not a directory: {kb_dir}",
-                fg=typer.colors.RED,
-            )
-            raise typer.Exit(code=1)
+        try:
+            validate_knowledge_base(kb_dir)
+        except KnowledgeEntryError as exc:
+            typer.secho(f"\nKnowledge base error: {exc}", fg=typer.colors.RED)
+            raise typer.Exit(code=1) from exc
 
     raw_error = capture_multiline("\nPaste your error below.")
 

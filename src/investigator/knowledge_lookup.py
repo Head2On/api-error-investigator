@@ -78,16 +78,11 @@ def reset_cache() -> None:
     _CACHED_DIR = None
 
 
-def lookup(
-    parsed_error: ParsedError,
-    *,
-    kb_dir: Path | str | None = None,
-) -> KnowledgeEntry | None:
-    """Return the KB entry for this parsed error, or None if unknown.
+def validate_knowledge_base(kb_dir: Path | str | None = None) -> None:
+    """Validate the knowledge base and populate the in-memory lookup cache upfront.
 
-    ``kb_dir=None`` uses the built-in knowledge directory. An explicit
-    directory is validated before the cache is consulted, so a cache built
-    from a directory that has since disappeared cannot mask the problem.
+    Raises ``KnowledgeEntryError`` if the directory does not exist, is not a directory,
+    contains no YAML entries, has malformed YAML, or contains identifier collisions.
     """
     if isinstance(kb_dir, str):
         kb_dir = Path(kb_dir)
@@ -110,6 +105,20 @@ def lookup(
 
     if _BY_TYPE is None or _BY_ALIAS is None or _CACHED_DIR != target_dir:
         _build_index(kb_dir)
+
+
+def lookup(
+    parsed_error: ParsedError,
+    *,
+    kb_dir: Path | str | None = None,
+) -> KnowledgeEntry | None:
+    """Return the KB entry for this parsed error, or None if unknown.
+
+    ``kb_dir=None`` uses the built-in knowledge directory. An explicit
+    directory is validated before the cache is consulted, so a cache built
+    from a directory that has since disappeared cannot mask the problem.
+    """
+    validate_knowledge_base(kb_dir)
 
     if not isinstance(parsed_error, dict):
         return None
