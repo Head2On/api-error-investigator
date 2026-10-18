@@ -7,8 +7,7 @@ import typer
 from investigator.cli_format import format_result
 from investigator.investigator import investigate as run_investigation
 from investigator.io_utils import capture_multiline
-from investigator.knowledge_loader import KnowledgeEntryError
-from investigator.knowledge_lookup import validate_knowledge_base
+from investigator.knowledge_loader import KnowledgeEntryError, load_all_entries
 
 app = typer.Typer(name="investigate")
 
@@ -17,7 +16,7 @@ def _run_workflow(kb_dir: Path | None = None) -> None:
     """Capture an error, investigate it, and print the formatted result."""
     if kb_dir is not None:
         try:
-            validate_knowledge_base(kb_dir)
+            load_all_entries(kb_dir)
         except KnowledgeEntryError as exc:
             typer.secho(f"\nKnowledge base error: {exc}", fg=typer.colors.RED)
             raise typer.Exit(code=1) from exc

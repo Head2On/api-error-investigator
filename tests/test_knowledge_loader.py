@@ -172,4 +172,67 @@ def test_explicit_file_path_raises(tmp_path):
 
 def test_explicit_empty_dir_raises(tmp_path):
     with pytest.raises(KnowledgeEntryError, match="knowledge directory contains no entries"):
-        load_all_entries(tmp_path)
+        load_all_entries(tmp_path)
+
+
+def test_collision_on_duplicate_error_type(tmp_path):
+    entry1 = tmp_path / "entry1.yaml"
+    entry1.write_text(
+        "error_type: test.DuplicateError\n"
+        "aliases: []\n"
+        "category: test\n"
+        "summary: s1\n"
+        "explanation: e1\n"
+        "common_causes: [c1]\n"
+        "fixes: [f1]\n"
+        "related_errors: []\n",
+        encoding="utf-8",
+    )
+    entry2 = tmp_path / "entry2.yaml"
+    entry2.write_text(
+        "error_type: test.DuplicateError\n"
+        "aliases: []\n"
+        "category: test\n"
+        "summary: s2\n"
+        "explanation: e2\n"
+        "common_causes: [c2]\n"
+        "fixes: [f2]\n"
+        "related_errors: []\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        KnowledgeEntryError, match="collision on identifier 'test.DuplicateError'"
+    ):
+        load_all_entries(tmp_path)
+
+
+def test_collision_on_alias(tmp_path):
+    entry1 = tmp_path / "entry1.yaml"
+    entry1.write_text(
+        "error_type: test.FirstError\n"
+        "aliases: [SharedAlias]\n"
+        "category: test\n"
+        "summary: s1\n"
+        "explanation: e1\n"
+        "common_causes: [c1]\n"
+        "fixes: [f1]\n"
+        "related_errors: []\n",
+        encoding="utf-8",
+    )
+    entry2 = tmp_path / "entry2.yaml"
+    entry2.write_text(
+        "error_type: test.SecondError\n"
+        "aliases: [SharedAlias]\n"
+        "category: test\n"
+        "summary: s2\n"
+        "explanation: e2\n"
+        "common_causes: [c2]\n"
+        "fixes: [f2]\n"
+        "related_errors: []\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        KnowledgeEntryError, match="collision on identifier 'SharedAlias'"
+    ):
+        load_all_entries(tmp_path)
+

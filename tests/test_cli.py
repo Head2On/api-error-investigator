@@ -299,25 +299,55 @@ def test_cli_module_main_execution(monkeypatch):
         runpy.run_module("investigator.cli", run_name="__main__")
     assert exc_info.value.code == 0
 
-def test_cli_custom_kb_dir_empty_fails_before_prompt(tmp_path):
-    """Empty explicit dir must fail before prompting the user for input."""
-    result = runner.invoke(app, ["--kb-dir", str(tmp_path)])  # no input=
+# ------------------------------ early validation in interactive TTY
+
+def test_cli_custom_kb_dir_nonexistent_fails_before_prompt(tmp_path, monkeypatch):
+    """Nonexistent dir must fail before prompting user in an interactive TTY."""
+    monkeypatch.setattr("typer.testing._NamedTextIOWrapper.isatty", lambda self: True)
+    missing_dir = tmp_path / "nonexistent"
+    result = runner.invoke(app, ["--kb-dir", str(missing_dir)])
+    assert result.exit_code == 1
+    assert "knowledge directory does not exist" in result.output
+    assert "Paste your error below" not in result.output
+    _assert_no_traceback(result.output)
+
+
+def test_cli_custom_kb_dir_file_fails_before_prompt(tmp_path, monkeypatch):
+    """File path passed as dir must fail before prompting user in an interactive TTY."""
+    monkeypatch.setattr("typer.testing._NamedTextIOWrapper.isatty", lambda self: True)
+    file_path = tmp_path / "some_file.txt"
+    file_path.write_text("hello", encoding="utf-8")
+    result = runner.invoke(app, ["--kb-dir", str(file_path)])
+    assert result.exit_code == 1
+    assert "knowledge directory is not a directory" in result.output
+    assert "Paste your error below" not in result.output
+    _assert_no_traceback(result.output)
+
+
+def test_cli_custom_kb_dir_empty_fails_before_prompt(tmp_path, monkeypatch):
+    """Empty explicit dir must fail before prompting user in an interactive TTY."""
+    monkeypatch.setattr("typer.testing._NamedTextIOWrapper.isatty", lambda self: True)
+    result = runner.invoke(app, ["--kb-dir", str(tmp_path)])
     assert result.exit_code == 1
     assert "contains no entries" in result.output
     assert "Paste your error below" not in result.output
     _assert_no_traceback(result.output)
 
 
-def test_cli_custom_kb_dir_malformed_fails_before_prompt(tmp_path):
+def test_cli_custom_kb_dir_malformed_fails_before_prompt(tmp_path, monkeypatch):
+    """Malformed YAML must fail before prompting user in an interactive TTY."""
+    monkeypatch.setattr("typer.testing._NamedTextIOWrapper.isatty", lambda self: True)
     (tmp_path / "bad.yaml").write_text("invalid: [yaml\n", encoding="utf-8")
-    result = runner.invoke(app, ["--kb-dir", str(tmp_path)])  # no input=
+    result = runner.invoke(app, ["--kb-dir", str(tmp_path)])
     assert result.exit_code == 1
     assert "invalid YAML" in result.output
     assert "Paste your error below" not in result.output
     _assert_no_traceback(result.output)
 
 
-def test_cli_custom_kb_dir_collision_fails_before_prompt(tmp_path):
+def test_cli_custom_kb_dir_collision_fails_before_prompt(tmp_path, monkeypatch):
+    """Identifier collisions must fail before prompting user in an interactive TTY."""
+    monkeypatch.setattr("typer.testing._NamedTextIOWrapper.isatty", lambda self: True)
     _write_valid_entry(tmp_path, error_type="DupError")
     (tmp_path / "dup.yaml").write_text(
         "error_type: DupError\n"
@@ -330,7 +360,7 @@ def test_cli_custom_kb_dir_collision_fails_before_prompt(tmp_path):
         "related_errors: []\n",
         encoding="utf-8",
     )
-    result = runner.invoke(app, ["--kb-dir", str(tmp_path)])  # no input=
+    result = runner.invoke(app, ["--kb-dir", str(tmp_path)])
     assert result.exit_code == 1
     assert "collision on identifier" in result.output
     assert "Paste your error below" not in result.output

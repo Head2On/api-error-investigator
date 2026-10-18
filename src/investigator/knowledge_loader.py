@@ -72,6 +72,30 @@ def _validate_entry(path: Path, raw: dict) -> KnowledgeEntry:
     return raw  # type: ignore
 
 
+def _check_collisions(entries: list[KnowledgeEntry]) -> None:
+    """Raise if any identifier appears as error_type or alias of more than one entry."""
+    seen: dict[str, tuple[str, str]] = {}
+    for entry in entries:
+        primary = entry["error_type"]
+        if primary in seen:
+            other_type, other_kind = seen[primary]
+            raise KnowledgeEntryError(
+                f"collision on identifier {primary!r}: "
+                f"appears as {other_kind} of {other_type!r} "
+                f"and as error_type of {primary!r}"
+            )
+        seen[primary] = (primary, "error_type")
+        for alias in entry["aliases"]:
+            if alias in seen:
+                other_type, other_kind = seen[alias]
+                raise KnowledgeEntryError(
+                    f"collision on identifier {alias!r}: "
+                    f"appears as {other_kind} of {other_type!r} "
+                    f"and as alias of {primary!r}"
+                )
+            seen[alias] = (primary, "alias")
+
+
 def load_all_entries(path: Path | str | None = None) -> list[KnowledgeEntry]:
     """Load and validate all knowledge base YAML entries.
 
@@ -119,4 +143,5 @@ def load_all_entries(path: Path | str | None = None) -> list[KnowledgeEntry]:
             f"knowledge directory contains no entries: {directory}"
         )
 
+    _check_collisions(entries)
     return entries
