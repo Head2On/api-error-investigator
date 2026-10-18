@@ -103,3 +103,50 @@ def test_unknown_does_not_invent_diagnosis():
     """A-013 must not fabricate. Unknown is None, nothing more."""
     result = lookup(_parsed("TotallyMadeUpError"))
     assert result is None
+
+
+# ----------------------------------------------------------- custom kb_dir
+
+def test_lookup_custom_kb_dir(tmp_path):
+    entry_yaml = tmp_path / "custom.yaml"
+    entry_yaml.write_text(
+        "error_type: test.CustomError\n"
+        "aliases: [CustomAlias]\n"
+        "category: custom\n"
+        "summary: custom summary\n"
+        "explanation: custom explanation\n"
+        "common_causes: [c1]\n"
+        "fixes: [f1]\n"
+        "related_errors: []\n",
+        encoding="utf-8",
+    )
+    # Lookup using custom kb_dir as Path
+    entry = lookup(_parsed("test.CustomError"), kb_dir=tmp_path)
+    assert entry is not None
+    assert entry["error_type"] == "test.CustomError"
+
+    # Alias lookup using custom kb_dir as string
+    entry_alias = lookup(_parsed("CustomAlias"), kb_dir=str(tmp_path))
+    assert entry_alias is not None
+    assert entry_alias["error_type"] == "test.CustomError"
+
+    # Built-in errors are not in custom kb_dir
+    assert lookup(_parsed("ValueError"), kb_dir=tmp_path) is None
+
+    # Switching back to default kb_dir restores default knowledge
+    entry_default = lookup(_parsed("ValueError"))
+    assert entry_default is not None
+    assert entry_default["error_type"] == "ValueError"
+
+
+def test_lookup_custom_kb_dir_nonexistent_raises(tmp_path):
+    missing_dir = tmp_path / "nonexistent"
+    with pytest.raises(lookup_mod.KnowledgeEntryError, match="knowledge directory does not exist"):
+        lookup(_parsed("ValueError"), kb_dir=missing_dir)
+
+
+def test_lookup_custom_kb_dir_file_path_raises(tmp_path):
+    file_path = tmp_path / "file.txt"
+    file_path.write_text("not a dir", encoding="utf-8")
+    with pytest.raises(lookup_mod.KnowledgeEntryError, match="knowledge directory is not a directory"):
+        lookup(_parsed("ValueError"), kb_dir=file_path)

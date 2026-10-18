@@ -72,25 +72,51 @@ def _validate_entry(path: Path, raw: dict) -> KnowledgeEntry:
     return raw  # type: ignore
 
 
-def load_all_entries() -> list[KnowledgeEntry]:
-    """Load and validate all knowledge base YAML entries from the knowledge directory."""
+def load_all_entries(path: Path | str | None = None) -> list[KnowledgeEntry]:
+    """Load and validate all knowledge base YAML entries.
+
+    If ``path`` is provided, entries are loaded from that directory and validated.
+    Raises ``KnowledgeEntryError`` if the custom directory does not exist, is not
+    a directory, contains no YAML entries, or contains malformed entries.
+    If ``path`` is None, entries are loaded from the default knowledge directory.
+    """
+    explicit = path is not None
+    if isinstance(path, str):
+        path = Path(path)
+    directory = path if explicit and path is not None else _KNOWLEDGE_DIR
+
+    if explicit:
+        if not directory.exists():
+            raise KnowledgeEntryError(
+                f"knowledge directory does not exist: {directory}"
+            )
+        if not directory.is_dir():
+            raise KnowledgeEntryError(
+                f"knowledge directory is not a directory: {directory}"
+            )
+    else:
+        if not directory.exists() or not directory.is_dir():
+            return []
+
     entries: list[KnowledgeEntry] = []
 
-    if not _KNOWLEDGE_DIR.exists():
-        return entries
-
-    for path in sorted(_KNOWLEDGE_DIR.glob("*.yaml")):
+    for file_path in sorted(directory.glob("*.yaml")):
         try:
-            raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+            raw = yaml.safe_load(file_path.read_text(encoding="utf-8"))
         except yaml.YAMLError as exc:
-            raise KnowledgeEntryError(f"{path.name}: invalid YAML — {exc}") from exc
+            raise KnowledgeEntryError(f"{file_path.name}: invalid YAML — {exc}") from exc
 
         if not isinstance(raw, dict):
             raise KnowledgeEntryError(
-                f"{path.name}: top-level content must be a mapping, "
+                f"{file_path.name}: top-level content must be a mapping, "
                 f"got {type(raw).__name__}"
             )
 
-        entries.append(_validate_entry(path, raw))
+        entries.append(_validate_entry(file_path, raw))
 
-    return entries
+    if explicit and not entries:
+        raise KnowledgeEntryError(
+            f"knowledge directory contains no entries: {directory}"
+        )
+
+    return entries

@@ -131,3 +131,45 @@ def test_all_starter_entries_load_and_validate():
         assert entry["explanation"].strip(), f"{error_type}: empty explanation"
         assert len(entry["common_causes"]) >= 1, f"{error_type}: no common_causes"
         assert len(entry["fixes"]) >= 1, f"{error_type}: no fixes"
+
+
+def test_explicit_custom_dir_loads_successfully(tmp_path):
+    entry_yaml = tmp_path / "custom.yaml"
+    entry_yaml.write_text(
+        "error_type: CustomError\n"
+        "aliases: [Custom]\n"
+        "category: test\n"
+        "summary: custom summary\n"
+        "explanation: custom explanation\n"
+        "common_causes: [cause 1]\n"
+        "fixes: [fix 1]\n"
+        "related_errors: []\n",
+        encoding="utf-8",
+    )
+    # Test with Path object
+    entries = load_all_entries(tmp_path)
+    assert len(entries) == 1
+    assert entries[0]["error_type"] == "CustomError"
+
+    # Test with string path
+    entries_str = load_all_entries(str(tmp_path))
+    assert len(entries_str) == 1
+    assert entries_str[0]["error_type"] == "CustomError"
+
+
+def test_explicit_nonexistent_dir_raises(tmp_path):
+    missing_dir = tmp_path / "nonexistent"
+    with pytest.raises(KnowledgeEntryError, match="knowledge directory does not exist"):
+        load_all_entries(missing_dir)
+
+
+def test_explicit_file_path_raises(tmp_path):
+    file_path = tmp_path / "file.txt"
+    file_path.write_text("not a directory", encoding="utf-8")
+    with pytest.raises(KnowledgeEntryError, match="knowledge directory is not a directory"):
+        load_all_entries(file_path)
+
+
+def test_explicit_empty_dir_raises(tmp_path):
+    with pytest.raises(KnowledgeEntryError, match="knowledge directory contains no entries"):
+        load_all_entries(tmp_path)

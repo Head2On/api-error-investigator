@@ -120,3 +120,24 @@ def test_does_not_mutate_input():
     assert result.status == result2.status
     assert result.parsed_error == result2.parsed_error
     assert result.knowledge == result2.knowledge
+
+
+def test_investigate_with_custom_kb_dir(tmp_path):
+    custom_yaml = tmp_path / "custom.yaml"
+    custom_yaml.write_text(
+        "error_type: MyCustomError\n"
+        "aliases: []\n"
+        "category: custom\n"
+        "summary: custom summary\n"
+        "explanation: custom explanation\n"
+        "common_causes: [c1]\n"
+        "fixes: [f1]\n"
+        "related_errors: []\n",
+        encoding="utf-8",
+    )
+    result = investigate("MyCustomError: boom", kb_dir=tmp_path)
+    assert result.status == "known"
+    assert result.knowledge is not None
+    assert result.knowledge["error_type"] == "MyCustomError"
+    assert result.investigation is not None
+    assert result.investigation.summary == "custom summary"
