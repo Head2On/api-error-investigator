@@ -9,7 +9,7 @@ from investigator.investigator import investigate as run_investigation
 from investigator.io_utils import capture_multiline
 from investigator.knowledge_loader import KnowledgeEntryError, load_all_entries
 
-app = typer.Typer(name="investigate")
+app = typer.Typer(name="investigate", add_completion=False)
 
 
 def _run_workflow(kb_dir: Path | None = None) -> None:
