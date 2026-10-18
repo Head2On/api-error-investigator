@@ -13,13 +13,13 @@ A fast, deterministic CLI developer tool that investigates Python and API errors
 
 ## Key Features
 
-- ⚡ **Deterministic & Instant:** Powered by an offline, indexed knowledge base. Zero latency, zero external network requests, completely reproducible.
-- 🎯 **Honest by Design:** If an error is unknown, it returns `Status: UNKNOWN`. The tool **never fabricates** a diagnosis.
-- 🔄 **Dual Interaction Modes:**
+- **Deterministic & Instant:** Powered by an offline, indexed knowledge base. Zero latency, zero external network requests, completely reproducible.
+-  **Honest by Design:** If an error is unknown, it returns `Status: UNKNOWN`. The tool **never fabricates** a diagnosis.
+-  **Dual Interaction Modes:**
   - **Interactive TTY:** Paste multiline tracebacks directly with early directory validation and simple `DONE` submission.
   - **Piped Mode:** Pipe stderr or log files directly (`python app.py 2>&1 | investigate`) with silent, prompt-free execution.
-- 📚 **Extensible Knowledge Base:** Bring custom error catalogs via `--kb-dir <path>` with automatic schema validation and collision detection.
-- 🛡️ **100% Tested:** Comprehensive test suite with 100% statement coverage across all modules.
+-  **Extensible Knowledge Base:** Bring custom error catalogs via `--kb-dir <path>` with automatic schema validation and collision detection.
+-  **100% Tested:** Comprehensive test suite with 100% statement coverage across all modules.
 
 ---
 
