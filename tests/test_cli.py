@@ -38,8 +38,9 @@ def test_cli_help():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "Error Investigator" in result.output
-    # Help must describe investigation capability.
-    assert "investigating" in result.output.lower()
+    # Single-command CLI: stops advertising COMMAND it doesn't have.
+    assert "Usage: investigate [OPTIONS]" in result.output
+    assert "COMMAND" not in result.output
     # The new flag must be documented.
     assert "--kb-dir" in result.output
 
@@ -284,6 +285,8 @@ def test_cli_invalid_option():
 def test_cli_extraneous_argument_or_old_subcommand():
     result = runner.invoke(app, ["investigate"])
     assert result.exit_code == 2
+    assert "unexpected extra argument" in result.output.lower()
+    assert "no such command" not in result.output.lower()
     _assert_no_traceback(result.output)
 
 

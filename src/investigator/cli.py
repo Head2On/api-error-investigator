@@ -9,7 +9,7 @@ from investigator.investigator import investigate as run_investigation
 from investigator.io_utils import capture_multiline
 from investigator.knowledge_loader import KnowledgeEntryError
 
-app = typer.Typer()
+app = typer.Typer(name="investigate")
 
 
 def _run_workflow(kb_dir: Path | None = None) -> None:
@@ -49,9 +49,8 @@ def _run_workflow(kb_dir: Path | None = None) -> None:
     typer.echo(output)
 
 
-@app.callback(invoke_without_command=True)
+@app.command(name="investigate")
 def main(
-    ctx: typer.Context,
     kb_dir: Path | None = typer.Option(
         None,
         "--kb-dir",
@@ -59,9 +58,8 @@ def main(
         exists=False,
     ),
 ) -> None:
-    """Error Investigator — a CLI developer tool for investigating Python and API errors"""
-    if ctx.invoked_subcommand is None:
-        _run_workflow(kb_dir)
+    """Error Investigator — a CLI developer tool for investigating Python and API errors."""
+    _run_workflow(kb_dir)
 
 
 if __name__ == "__main__":
