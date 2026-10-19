@@ -57,6 +57,21 @@ def test_investigate_exception_unraised_exception():
     assert result.parsed_error["message"] == "unraised literal value"
 
 
+def test_investigate_exception_chained_exception():
+    """investigate_exception parses chained exceptions (raise ... from orig)."""
+    try:
+        try:
+            1 / 0
+        except ZeroDivisionError as orig:
+            raise ValueError("wrapped exception") from orig
+    except ValueError as exc:
+        result = investigate_exception(exc)
+
+    assert result.status == "known"
+    assert result.parsed_error["error_type"] == "ValueError"
+    assert result.parsed_error["message"] == "wrapped exception"
+
+
 def test_investigate_exception_pure_no_stdout_or_stderr(capsys):
     """investigate_exception produces no side effects on stdout or stderr."""
     exc = ValueError("silent test")
@@ -244,6 +259,25 @@ def test_capture_exception_parameterized_decorator_suppressed():
     assert len(sunk) == 1
     assert sunk[0].parsed_error["error_type"] == "ZeroDivisionError"
     assert sunk[0].status == "unknown"
+
+
+def test_capture_exception_decorator_repeated_calls():
+    """Decorated functions are reentrant and safe for repeated calls across executions."""
+    sunk: list[InvestigationResult] = []
+
+    @capture_exception(reraise=False, sink=sunk.append)
+    def flaky(val: int) -> int:
+        if val < 0:
+            raise ValueError("negative")
+        return val * 2
+
+    assert flaky(5) == 10
+    assert flaky(-1) is None
+    assert flaky(3) == 6
+    assert flaky(-2) is None
+    assert len(sunk) == 2
+    assert sunk[0].parsed_error["message"] == "negative"
+    assert sunk[1].parsed_error["message"] == "negative"
 
 
 # ---------------------------------------------------------------------------

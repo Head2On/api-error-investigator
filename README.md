@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 219 passed](https://img.shields.io/badge/tests-219%20passed-brightgreen.svg)]()
+[![Tests: 238 passed](https://img.shields.io/badge/tests-238%20passed-brightgreen.svg)]()
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)]()
 
 A fast, deterministic CLI developer tool that investigates Python and API errors by parsing tracebacks, matching them against a curated knowledge base, and returning structured diagnoses with root causes and actionable fixes.
@@ -291,9 +291,97 @@ Out of the box, `investigate` includes curated diagnostics for:
 
 ---
 
-## Programmatic Python API
+## Python SDK & Programmatic API
 
-You can also use Error Investigator as an imported library in your Python applications:
+Error Investigator provides both high-level runtime utilities in `investigator.sdk` and direct parsing functions in `investigator`.
+
+### 1. Investigating Caught Exceptions (`investigate_exception`)
+
+Use `investigate_exception` to inspect an active or caught exception instance directly without manually extracting tracebacks.
+
+- **Pure Function:** Zero side effects — never prints, logs, or re-raises.
+- **Traceback-Aware:** Analyzes active exception tracebacks, chained exceptions (`from e`), and unraised exceptions (a never-raised exception is formatted as `TypeName: message` and investigated normally).
+- **Custom KB Support:** Supports custom `--kb-dir` catalogs via the `kb_dir` keyword argument.
+
+```python
+from investigator.sdk import investigate_exception
+
+try:
+    int("invalid")
+except ValueError as exc:
+    result = investigate_exception(exc)
+
+    if result.status == "known":
+        assert result.investigation is not None
+        print(f"Error Type: {result.parsed_error['error_type']}")
+        print(f"Summary:    {result.investigation.summary}")
+        print("Recommended Fixes:")
+        for fix in result.investigation.fixes:
+            print(f"  • {fix}")
+    else:
+        print("Uncataloged error. No diagnosis produced.")
+```
+
+---
+
+### 2. Automated Exception Capture (`capture_exception`)
+
+`capture_exception` acts as both a **context manager** and a **decorator** to monitor code blocks or functions. When an `Exception` is raised, it automatically investigates the error, outputs formatted diagnosis to `sys.stderr` (or a custom sink), and optionally re-raises.
+
+#### As a Context Manager
+
+```python
+from investigator.sdk import capture_exception
+
+# Default: prints formatted diagnosis to stderr and re-raises the original exception
+with capture_exception():
+    data = load_data()
+
+# Suppress exception after diagnosing (reraise=False)
+with capture_exception(reraise=False):
+    risky_operation()
+
+# Route diagnoses to a custom sink (e.g. logger, monitoring, or telemetry)
+def log_sink(result):
+    my_logger.error("Investigated failure: %s", result.parsed_error["error_type"])
+    if result.investigation:
+        my_logger.info("Summary: %s", result.investigation.summary)
+
+with capture_exception(sink=log_sink):
+    process_order()
+```
+
+#### As a Function Decorator
+
+Works as either a bare decorator or parameterized with options:
+
+```python
+from investigator.sdk import capture_exception
+
+# Bare decorator: diagnoses to stderr and re-raises on exception
+@capture_exception
+def query_user(user_id: int):
+    return db.query(User).filter_by(id=user_id).one()
+
+# Parameterized decorator: custom sink and suppression
+@capture_exception(reraise=False, sink=custom_sink)
+def background_sync():
+    sync_remote_records()
+
+# With custom knowledge base directory
+@capture_exception(kb_dir="./custom_kb")
+def calculate_metrics():
+    compute_heavy_stats()
+```
+
+> [!NOTE]
+> **Safe for Repeated Calls:** Decorated functions are reentrant and safe for repeated calls across the application lifecycle.
+
+---
+
+### 3. Direct Traceback String Investigation (`investigate`)
+
+For investigating raw traceback strings from external logs, worker queues, or stdin streams:
 
 ```python
 from investigator import investigate
@@ -309,14 +397,38 @@ result = investigate(traceback_text)
 
 if result.status == "known":
     assert result.investigation is not None
-    print(f"Error Type: {result.parsed_error['error_type']}")
-    print(f"Summary:    {result.investigation.summary}")
-    print("Fixes:")
-    for fix in result.investigation.fixes:
-        print(f"  • {fix}")
-else:
-    print("Error unrecognized. No diagnosis produced.")
+    print(f"Summary: {result.investigation.summary}")
 ```
+
+---
+
+### 4. Custom Knowledge Base & Error Handling
+
+When providing a custom knowledge base directory (`kb_dir`) to `investigate_exception` or `capture_exception`, the directory is validated upfront (checking path existence, directory type, presence of YAML files, schema integrity, and identifier collisions). If validation fails, `KnowledgeEntryError` is raised immediately.
+
+```python
+from pathlib import Path
+from investigator.sdk import KnowledgeEntryError, investigate_exception
+
+try:
+    result = investigate_exception(exc, kb_dir=Path("./invalid_or_missing_kb"))
+except KnowledgeEntryError as err:
+    print(f"Custom knowledge base error: {err}")
+```
+
+---
+
+### 5. SDK Reference & Invariants
+
+| Component | Signature / Usage | Description |
+| :--- | :--- | :--- |
+| **`investigate_exception`** | `investigate_exception(exc, *, kb_dir=None) -> InvestigationResult` | Pure function returning structured diagnosis. Propagates `KnowledgeEntryError` on invalid `kb_dir`. |
+| **`capture_exception`** | `@capture_exception`<br>`with capture_exception(*, reraise=True, sink=None, kb_dir=None):` | Context manager & decorator. Formats diagnosis to `sys.stderr` by default and preserves traceback on re-raise. |
+| **`KnowledgeEntryError`** | `from investigator.sdk import KnowledgeEntryError` | Re-exported exception raised when custom knowledge base fails schema or collision validation. |
+
+#### Product Invariants
+- **Non-Interference with System Signals:** `KeyboardInterrupt` and `SystemExit` are **never** caught or intercepted by `capture_exception`; they pass through cleanly.
+- **Sink Customization:** Supplying a callable `sink` bypasses `sys.stderr` emission entirely, directing the `InvestigationResult` directly into your logging or telemetry pipeline.
 
 ---
 
@@ -334,6 +446,7 @@ src/investigator/
 ├── io_utils.py             # Multiline stdin capture (interactive TTY & pipe support)
 ├── knowledge_loader.py     # YAML loader, schema validation, and collision detection
 ├── knowledge_lookup.py     # In-memory index and lookup engine
+├── sdk.py                  # Programmatic Python SDK (investigate_exception, capture_exception)
 └── knowledge/              # Built-in curated YAML knowledge entries
 ```
 
@@ -341,6 +454,7 @@ src/investigator/
 
 The codebase enforces strict, unidirectional module layering:
 - **CLI Layer:** [`cli.py`](src/investigator/cli.py) handles terminal I/O, invokes the loader for upfront `--kb-dir` validation, and triggers the investigator.
+- **SDK Layer:** [`sdk.py`](src/investigator/sdk.py) provides programmatic developer integration (`investigate_exception`, `capture_exception`).
 - **Orchestration Layer:** [`investigator.py`](src/investigator/investigator.py) coordinates parsing and lookup.
 - **Lookup Layer:** [`knowledge_lookup.py`](src/investigator/knowledge_lookup.py) manages in-memory indexing and query matching.
 - **Loader Layer:** [`knowledge_loader.py`](src/investigator/knowledge_loader.py) reads YAML, validates schema constraints, and detects collisions.
@@ -359,7 +473,7 @@ pytest --cov=investigator --cov-report=term-missing
 
 ### Current Status
 
-- **219 passed tests**
+- **238 passed tests**
 - **100% statement coverage** across all source files
 - Strict test isolation (cache resets, interactive TTY simulation, edge-case and adversarial checks)
 
