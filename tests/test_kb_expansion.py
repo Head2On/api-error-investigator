@@ -55,3 +55,11 @@ def test_no_em_dashes_in_kb() -> None:
     kb_dir = Path(__file__).parent.parent / "src" / "investigator" / "knowledge"
     for path in kb_dir.glob("*.yaml"):
         assert "\u2014" not in path.read_text(encoding="utf-8"), f"em-dash in {path.name}"
+
+
+def test_import_error_unregistered_is_unknown() -> None:
+    """ImportError is not aliased to ModuleNotFoundError and honestly returns UNKNOWN."""
+    result = investigate("ImportError: cannot import name 'foo' from 'bar'")
+    assert result.status == "unknown"
+    assert result.knowledge is None
+    assert result.investigation is None
