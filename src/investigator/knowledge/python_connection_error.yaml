@@ -1,0 +1,27 @@
+error_type: ConnectionError
+aliases: []
+
+category: network
+subcategory: socket_connection
+
+summary: "A network connection could not be established or was terminated by the remote host."
+explanation: >
+  ConnectionError is a built-in OS error raised when a low-level socket connection fails.
+  This encompasses connection attempts where the target host actively refuses the connection,
+  the remote peer abruptly resets an existing connection, or the network route is unreachable.
+common_causes:
+  - "The target server or service is not running or listening on the specified port."
+  - "A local or remote firewall, security group, or proxy is blocking the outbound or inbound traffic."
+  - "The remote host closed or reset the TCP connection unexpectedly during transmission."
+  - "The hostname or IP address specified in the connection string is incorrect."
+
+fixes:
+  - "Verify the destination service is running and listening on the expected host and port (e.g. using curl or netcat)."
+  - "Check firewall rules, VPC security groups, and proxy settings between client and server."
+  - "Implement retry logic with exponential backoff for transient connection drops."
+  - "Inspect server-side logs to see why the connection was refused or dropped."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#ConnectionError"
+related_errors:
+  - TimeoutError
+  - OSError

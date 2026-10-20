@@ -1,0 +1,29 @@
+error_type: ModuleNotFoundError
+aliases:
+  - ImportError
+
+category: python
+subcategory: import_system
+
+summary: "A module or package could not be located by the Python import system."
+explanation: >
+  ModuleNotFoundError is a subclass of ImportError raised when an 'import' statement
+  cannot locate the specified module in sys.path or the active virtual environment.
+  This typically happens when a third-party dependency is not installed in the current
+  Python interpreter, when module names are misspelled, or due to project layout issues.
+common_causes:
+  - "The required third-party library is not installed in the currently active virtual environment."
+  - "Python is running in a different virtual environment or global interpreter than intended."
+  - "Typo or incorrect casing in the package or module name in the import statement."
+  - "Circular imports where two modules attempt to import each other during top-level module initialization."
+
+fixes:
+  - "Install the missing package into the active environment using pip install <package_name>."
+  - "Verify which Python executable is active using 'which python' or 'python -m pip list'."
+  - "Ensure project root is in sys.path or install your project in editable mode via 'pip install -e .'."
+  - "For circular imports, defer the import inside the function that uses it."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#ModuleNotFoundError"
+related_errors:
+  - AttributeError
+  - NameError

@@ -1,0 +1,28 @@
+error_type: requests.exceptions.Timeout
+aliases:
+  - requests.Timeout
+
+category: network
+subcategory: http_timeout
+
+summary: "The Requests HTTP client request timed out before receiving a complete response."
+explanation: >
+  requests.exceptions.Timeout is the base exception raised by Requests when an HTTP request
+  exceeds either the connection timeout (time waiting to establish the TCP connection) or the
+  read timeout (time waiting for server bytes after the connection is established).
+common_causes:
+  - "The remote server received the request but took too long to compute the response (read timeout)."
+  - "The network route to the server is severely congested or packets were dropped (connect timeout)."
+  - "The 'timeout' parameter in the requests call was configured too aggressively (e.g. timeout=0.5)."
+  - "The remote endpoint is locked waiting on an external database, third-party API, or lock."
+
+fixes:
+  - "Set explicit connect and read timeouts using a tuple (e.g. requests.get(url, timeout=(3.05, 27)))."
+  - "Profile and optimize the upstream server response time or database queries."
+  - "Implement retry logic with backoff for idempotent HTTP methods (GET, PUT, DELETE)."
+  - "For long-running tasks, switch from synchronous request/response to an asynchronous polling or webhook model."
+
+docs_url: "https://requests.readthedocs.io/en/latest/user/advanced/#timeouts"
+related_errors:
+  - requests.exceptions.ConnectionError
+  - TimeoutError

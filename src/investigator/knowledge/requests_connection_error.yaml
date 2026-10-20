@@ -1,0 +1,29 @@
+error_type: requests.exceptions.ConnectionError
+aliases:
+  - requests.ConnectionError
+
+category: network
+subcategory: http_client
+
+summary: "The Requests HTTP client failed to establish a network connection to the server."
+explanation: >
+  requests.exceptions.ConnectionError is raised by the Requests library when an HTTP or HTTPS
+  request fails at the transport layer before receiving an HTTP response. This is typically
+  caused by DNS resolution failures, connection refusals by the remote host, or SSL/TLS certificate
+  handshake rejections.
+common_causes:
+  - "DNS lookup failed because the domain name does not exist or DNS resolvers are unreachable."
+  - "The target HTTP server is offline, restarting, or not listening on the specified port."
+  - "SSL certificate validation failed due to an expired, self-signed, or untrusted certificate authority."
+  - "Proxy configuration in HTTP_PROXY or HTTPS_PROXY environment variables is pointing to an invalid proxy."
+
+fixes:
+  - "Verify the domain name and test resolution with 'nslookup' or 'ping'."
+  - "Confirm the target service is online and accessible via curl from the host running the application."
+  - "For internal servers with private CAs, pass the CA bundle path via the 'verify' parameter."
+  - "Use an HTTPAdapter with urllib3 Retry configured to retry transient transport failures."
+
+docs_url: "https://requests.readthedocs.io/en/latest/user/quickstart/#errors-and-exceptions"
+related_errors:
+  - requests.exceptions.Timeout
+  - requests.exceptions.HTTPError

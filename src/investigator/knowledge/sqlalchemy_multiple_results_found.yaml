@@ -1,0 +1,29 @@
+error_type: sqlalchemy.exc.MultipleResultsFound
+aliases:
+  - MultipleResultsFound
+
+category: database
+subcategory: query_result
+
+summary: "A database query expected exactly one row, but returned two or more rows."
+explanation: >
+  sqlalchemy.exc.MultipleResultsFound is raised by SQLAlchemy when calling .one() or
+  .one_or_none() on a query that matched multiple rows in the database. The operation requires
+  a unique single record, but the database filter was insufficiently specific or unique constraints
+  are missing on the queried columns.
+common_causes:
+  - "Calling .one() on a query filtered by a non-unique column (e.g. status, first_name, or foreign key)."
+  - "Duplicate records in a table that lacks a unique database constraint or index on the lookup columns."
+  - "A SQL JOIN produced a Cartesian product or multiplied rows across related records."
+  - "Missing tenant or organization scoping filter in multi-tenant database queries."
+
+fixes:
+  - "Add a database-level UNIQUE constraint on the queried column(s) to guarantee uniqueness at the database level."
+  - "Use .first() or limit(1) if any matching row is acceptable."
+  - "Refine WHERE criteria to include the primary key or all composite uniqueness fields."
+  - "Inspect query joins to ensure they do not produce duplicate parent rows (or add distinct())."
+
+docs_url: "https://docs.sqlalchemy.org/en/20/core/exceptions.html#sqlalchemy.exc.MultipleResultsFound"
+related_errors:
+  - sqlalchemy.exc.NoResultFound
+  - sqlalchemy.exc.IntegrityError

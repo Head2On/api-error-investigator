@@ -1,0 +1,28 @@
+error_type: TypeError
+aliases: []
+
+category: python
+subcategory: type_mismatch
+
+summary: "An operation or function was applied to an object of inappropriate type."
+explanation: >
+  TypeError indicates an operation was attempted on an object whose data type does not
+  support it, or a function was called with an incorrect number or type of arguments.
+  Unlike ValueError where the type is correct but the value is invalid, TypeError means
+  the data type itself is incompatible with the requested action.
+common_causes:
+  - "Attempting to concatenate or add incompatible types (e.g. str and int)."
+  - "Subscripting or indexing an unindexable object (e.g. 'NoneType' object is not subscriptable)."
+  - "Calling an object that is not a function or callable (e.g. 'str' object is not callable)."
+  - "Passing the wrong number of positional or keyword arguments to a function."
+
+fixes:
+  - "Cast types explicitly before operations (e.g. str(num) or int(string_val))."
+  - "Check whether an object is None before indexing with brackets []."
+  - "Inspect the function signature and ensure argument counts match the definition."
+  - "Use isinstance() or Python type hints with mypy/pyright to catch mismatches early."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#TypeError"
+related_errors:
+  - ValueError
+  - AttributeError

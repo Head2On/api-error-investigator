@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 260 passed](https://img.shields.io/badge/tests-260%20passed-brightgreen.svg)]()
+[![Tests: 292 passed](https://img.shields.io/badge/tests-292%20passed-brightgreen.svg)]()
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)]()
 
 A fast, deterministic CLI developer tool that investigates Python and API errors by parsing tracebacks, matching them against a curated knowledge base, and returning structured diagnoses with root causes and actionable fixes.
@@ -282,12 +282,32 @@ related_errors:
 Out of the box, `investigate` includes curated diagnostics for:
 
 | Error Type | Category | Aliases |
-| :--- | :--- | :--- |
+|---|---|---|
+| **Python builtins** | | |
+| `ValueError` | `python` | — |
+| `KeyError` | `python` | — |
+| `AttributeError` | `python` | — |
+| `TypeError` | `python` | — |
+| `IndexError` | `python` | — |
+| `ModuleNotFoundError` | `python` | `ImportError` |
+| **Filesystem** | | |
+| `FileNotFoundError` | `filesystem` | — |
+| `PermissionError` | `filesystem` | — |
+| **Network** | | |
+| `ConnectionError` | `network` | — |
+| `TimeoutError` | `network` | — |
+| `requests.exceptions.ConnectionError` | `network` | `requests.ConnectionError` |
+| `requests.exceptions.Timeout` | `network` | `requests.Timeout` |
+| `httpx.ConnectError` | `network` | — |
+| **Data** | | |
+| `json.JSONDecodeError` | `data` | `JSONDecodeError` |
+| `pydantic.ValidationError` | `data` | `ValidationError` |
+| **Database** | | |
 | `sqlalchemy.exc.IntegrityError` | `database` | `IntegrityError` |
 | `sqlalchemy.exc.OperationalError` | `database` | `OperationalError` |
 | `sqlalchemy.exc.DataError` | `database` | `DataError` |
-| `ValueError` | `python` | — |
-| `KeyError` | `python` | — |
+| `sqlalchemy.exc.NoResultFound` | `database` | `NoResultFound` |
+| `sqlalchemy.exc.MultipleResultsFound` | `database` | `MultipleResultsFound` |
 
 ---
 
@@ -597,7 +617,7 @@ pytest --cov=investigator --cov-report=term-missing
 
 ### Current Status
 
-- **260 passed tests**
+- **292 passed tests**
 - **100% statement coverage** across all source files
 - Strict test isolation (cache resets, interactive TTY simulation, edge-case and adversarial checks)
 

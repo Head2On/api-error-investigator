@@ -1,0 +1,28 @@
+error_type: sqlalchemy.exc.NoResultFound
+aliases:
+  - NoResultFound
+
+category: database
+subcategory: query_result
+
+summary: "A database query expected at least one row, but none was returned."
+explanation: >
+  sqlalchemy.exc.NoResultFound is raised by SQLAlchemy when calling .one() on a query,
+  Result, or scalar execution that returned zero database rows. The application required
+  an exact match (such as an entity lookup by primary key), but the criteria matched no rows in the table.
+common_causes:
+  - "Querying for a primary key or unique identifier that does not exist in the database table."
+  - "Applying restrictive WHERE filters that eliminated all rows (e.g. soft-delete, tenant, or status filters)."
+  - "Calling .one() instead of .one_or_none() or .first() when an entity may legitimately not exist."
+  - "Database transaction isolation: querying uncommitted rows from a different concurrent transaction."
+
+fixes:
+  - "Use .one_or_none() or .first() instead of .one() if the record is optional, and handle None explicitly."
+  - "Catch NoResultFound and convert it to an HTTP 404 Not Found response in web handlers."
+  - "Verify filter conditions and foreign key values against database records."
+  - "Ensure preceding INSERT or UPDATE transactions have committed if querying across sessions."
+
+docs_url: "https://docs.sqlalchemy.org/en/20/core/exceptions.html#sqlalchemy.exc.NoResultFound"
+related_errors:
+  - sqlalchemy.exc.MultipleResultsFound
+  - KeyError

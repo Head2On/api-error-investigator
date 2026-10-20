@@ -1,0 +1,28 @@
+error_type: IndexError
+aliases: []
+
+category: python
+subcategory: sequence_bounds
+
+summary: "A sequence subscript is out of range."
+explanation: >
+  IndexError is raised when trying to access an element of a sequence (like a list, tuple,
+  or string) using an index that is outside the valid range of elements. Python sequences
+  are 0-indexed, meaning an n-element sequence only allows indices from 0 to n-1 (or -n to -1
+  for negative indices).
+common_causes:
+  - "Accessing index 0 or negative index on an empty list or tuple."
+  - "Using an index equal to or greater than len(sequence)."
+  - "Off-by-one errors in while loops or manual index incrementation."
+  - "Splitting a string and assuming a specific number of tokens exist (e.g. line.split(',')[1])."
+
+fixes:
+  - "Check the length of the list with len(seq) before indexing, or check if the list is non-empty."
+  - "Iterate directly over items with 'for item in sequence:' instead of indexing by range(len(sequence))."
+  - "Use list slicing (e.g. seq[:1]) which returns an empty list instead of raising IndexError."
+  - "Use try/except IndexError to handle empty or shorter-than-expected sequence cases gracefully."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#IndexError"
+related_errors:
+  - KeyError
+  - ValueError

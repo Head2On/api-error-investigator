@@ -1,0 +1,29 @@
+error_type: json.JSONDecodeError
+aliases:
+  - JSONDecodeError
+
+category: data
+subcategory: serialization
+
+summary: "Failed to parse a string as valid JSON."
+explanation: >
+  json.JSONDecodeError is a subclass of ValueError raised by the json module when parsing
+  a document that does not conform to the JSON specification. In web applications, this frequently
+  happens when reading an empty HTTP response body, receiving HTML instead of JSON (such as from
+  a proxy 502/504 error page), or unescaped characters in the payload.
+common_causes:
+  - "Attempting to parse an empty string or whitespace-only response body (e.g. response.json() on a 204 No Content)."
+  - "The server returned an HTML error page (e.g. 502 Bad Gateway) with text/html content instead of application/json."
+  - "Trailing commas in JSON arrays or objects, which standard JSON does not permit."
+  - "Single quotes instead of double quotes used for strings and keys in the JSON text."
+
+fixes:
+  - "Check that response.text is non-empty before calling response.json() or json.loads()."
+  - "Inspect response.status_code and Content-Type header to ensure the response is actually JSON."
+  - "Ensure keys and string values use double quotes (\") rather than single quotes (')."
+  - "Remove trailing commas from lists and dictionary objects in raw JSON payloads."
+
+docs_url: "https://docs.python.org/3/library/json.html#json.JSONDecodeError"
+related_errors:
+  - ValueError
+  - TypeError

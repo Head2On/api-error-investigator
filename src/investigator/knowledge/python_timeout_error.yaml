@@ -1,0 +1,27 @@
+error_type: TimeoutError
+aliases: []
+
+category: network
+subcategory: socket_timeout
+
+summary: "A system or socket operation exceeded its configured time limit."
+explanation: >
+  TimeoutError is raised when an operation (typically a network socket read, write, connect,
+  or inter-process lock acquisition) does not complete within the allotted timeout duration.
+  In Python 3.10+, built-in socket timeouts raise this error rather than socket.timeout.
+common_causes:
+  - "The remote server is overloaded, experiencing high latency, or unresponsive to requests."
+  - "The configured socket or request timeout is set too low for slow network conditions or heavy workloads."
+  - "Network packets are being dropped by intermediate routers or firewalls without sending a TCP RST."
+  - "A database query or backend RPC is taking longer to execute than the client timeout window."
+
+fixes:
+  - "Increase the timeout duration to accommodate peak load or slow queries."
+  - "Optimize the downstream server endpoint or database query to respond faster."
+  - "Implement connection pooling and keep-alive to avoid connection negotiation delays."
+  - "Use asynchronous background workers (e.g. Celery, ARQ) for operations that exceed standard HTTP timeout limits."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#TimeoutError"
+related_errors:
+  - ConnectionError
+  - OSError

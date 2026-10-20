@@ -1,0 +1,28 @@
+error_type: AttributeError
+aliases: []
+
+category: python
+subcategory: object_model
+
+summary: "An attribute reference or assignment failed because the object does not define it."
+explanation: >
+  AttributeError is raised when attempting to access or assign an attribute or method
+  that does not exist on an object. In Python, this frequently occurs when a variable is
+  unexpectedly None, when an object type differs from what was assumed, or due to a typo
+  in a method or property name.
+common_causes:
+  - "Calling a method on an object that evaluated to None (e.g. NoneType object has no attribute '...')."
+  - "Typo or spelling mistake in a method, property, or variable name."
+  - "Accessing an instance attribute before it was initialized in __init__."
+  - "Assuming an API or library returned a dictionary or model instance when it returned something else."
+
+fixes:
+  - "Check if the object is None before accessing attributes (e.g. use an if check or optional chaining pattern)."
+  - "Verify the spelling of the attribute against the class definition or dir(obj)."
+  - "Check the return type of the function or query that produced the object."
+  - "Use getattr(obj, 'attr_name', default) if the attribute is optional."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#AttributeError"
+related_errors:
+  - TypeError
+  - KeyError

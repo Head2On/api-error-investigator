@@ -1,0 +1,28 @@
+error_type: FileNotFoundError
+aliases: []
+
+category: filesystem
+subcategory: path_resolution
+
+summary: "A file or directory was requested but does not exist on the filesystem."
+explanation: >
+  FileNotFoundError is raised by the operating system when an open(), read, write, or
+  file operation specifies a path that does not resolve to an existing file or directory.
+  This most commonly happens when using relative paths that depend on the current working
+  directory, or when expected configuration or data files are missing.
+common_causes:
+  - "Using a relative path assuming a different current working directory than where Python was launched."
+  - "Typos or incorrect file extensions in the file path string."
+  - "Attempting to create a file in a parent directory that does not exist yet."
+  - "Missing environment-specific files such as .env, credentials, or static assets."
+
+fixes:
+  - "Use pathlib.Path(__file__).parent to resolve paths relative to the script location instead of cwd."
+  - "Check path existence with Path.exists() or os.path.exists() before opening."
+  - "Create parent directories before writing files using Path.mkdir(parents=True, exist_ok=True)."
+  - "Log or print os.getcwd() to inspect the actual runtime working directory."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#FileNotFoundError"
+related_errors:
+  - PermissionError
+  - IsADirectoryError

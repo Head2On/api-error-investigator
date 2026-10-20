@@ -1,0 +1,29 @@
+error_type: pydantic.ValidationError
+aliases:
+  - ValidationError
+
+category: data
+subcategory: schema_validation
+
+summary: "Data failed to validate against a Pydantic schema or model definition."
+explanation: >
+  pydantic.ValidationError is raised when input data passed to a Pydantic model or validated
+  dataclass fails type checking, required field presence, or custom validator constraints.
+  In FastAPI and modern Python services, this indicates a request body, query parameter, or
+  internal model assignment violated schema requirements.
+common_causes:
+  - "A required field was missing from the input dictionary or JSON payload."
+  - "A field received an invalid data type that cannot be coerced (e.g. a string passed for an integer field)."
+  - "A custom field validator (@field_validator or @validator) rejected the value or raised an error."
+  - "String length, regex pattern, or numeric range constraints (ge, le) were violated."
+
+fixes:
+  - "Inspect exc.errors() to get the exact field path (loc) and failure reason for each invalid attribute."
+  - "Verify client request payloads match the schema and provide all required fields."
+  - "Provide default values (e.g. field: str | None = None) for optional fields."
+  - "Add pre=True mode or custom parsing logic to field validators if input requires preprocessing."
+
+docs_url: "https://docs.pydantic.dev/latest/errors/validation_errors/"
+related_errors:
+  - ValueError
+  - TypeError

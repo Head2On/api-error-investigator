@@ -1,0 +1,27 @@
+error_type: httpx.ConnectError
+aliases: []
+
+category: network
+subcategory: http_client
+
+summary: "The HTTPX client failed to establish a connection to the remote host."
+explanation: >
+  httpx.ConnectError is raised by HTTPX (sync or async) when a connection attempt fails before
+  an HTTP request can be sent. This typically indicates that the target server is down, the hostname
+  cannot be resolved, or network firewalls are actively rejecting socket connections.
+common_causes:
+  - "The target server is stopped, crashing on startup, or not listening on the requested port."
+  - "DNS name resolution failed for the requested hostname."
+  - "The client is in a container or isolated network environment without egress connectivity to the target."
+  - "The URL scheme or port is mismatched (e.g. sending HTTPS requests to an HTTP-only port)."
+
+fixes:
+  - "Verify the host and port in the request URL are correct and reachable."
+  - "Check that the destination service process is running and bound to 0.0.0.0 rather than 127.0.0.1 if calling across containers."
+  - "Implement retry handling using httpx transport retries or external libraries like tenacity."
+  - "Catch httpx.ConnectError explicitly to return a degraded fallback response or structured 502/503."
+
+docs_url: "https://www.python-httpx.org/exceptions/"
+related_errors:
+  - httpx.TimeoutException
+  - ConnectionError

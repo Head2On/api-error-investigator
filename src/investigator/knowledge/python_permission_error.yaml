@@ -1,0 +1,28 @@
+error_type: PermissionError
+aliases: []
+
+category: filesystem
+subcategory: access_control
+
+summary: "An operation failed due to lack of filesystem permissions or access rights."
+explanation: >
+  PermissionError is raised when attempting an operation on a file, directory, or socket
+  without sufficient system access privileges. On Unix-like systems and Windows, this happens
+  when file mode permissions (read, write, execute) restrict access, when opening a file
+  currently locked by another process, or when attempting to bind to a restricted port.
+common_causes:
+  - "Attempting to write to a read-only directory or system directory without administrative permissions."
+  - "Trying to open or overwrite a file that is currently locked or open in another application on Windows."
+  - "Attempting to execute a script or binary without executable (+x) permissions."
+  - "Attempting to bind a network server to a privileged port (e.g. port 80 or 443) as a non-root user."
+
+fixes:
+  - "Verify file permissions using chmod or file properties, granting read/write access to the current user."
+  - "Check if another process (e.g. Excel, text editor, or another Python process) has locked the file."
+  - "Use user-writable directories such as tempfile.gettempdir() or user home for app writes."
+  - "Run privileged services behind a reverse proxy (like Nginx) or bind to non-privileged ports (>1024)."
+
+docs_url: "https://docs.python.org/3/library/exceptions.html#PermissionError"
+related_errors:
+  - FileNotFoundError
+  - OSError
