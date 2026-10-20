@@ -63,3 +63,19 @@ def test_import_error_unregistered_is_unknown() -> None:
     assert result.status == "unknown"
     assert result.knowledge is None
     assert result.investigation is None
+
+
+def test_bare_validation_error_unregistered_is_unknown() -> None:
+    """Bare ValidationError is not aliased to pydantic.ValidationError and returns UNKNOWN."""
+    result = investigate("ValidationError: 1 validation error for Model")
+    assert result.status == "unknown"
+    assert result.knowledge is None
+    assert result.investigation is None
+
+
+@pytest.mark.parametrize("alias", ["NoResultFound", "MultipleResultsFound"])
+def test_sqlalchemy_aliases_resolve_as_known(alias: str) -> None:
+    """SQLAlchemy ORM query result aliases resolve to Status: KNOWN."""
+    result = investigate(f"{alias}: test query")
+    assert result.status == "known"
+    assert result.investigation is not None

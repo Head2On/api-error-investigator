@@ -7,10 +7,10 @@ subcategory: query_result
 
 summary: "A database query expected exactly one row, but returned two or more rows."
 explanation: >
-  sqlalchemy.exc.MultipleResultsFound is raised by SQLAlchemy when calling .one() or
-  .one_or_none() on a query that matched multiple rows in the database. The operation requires
-  a unique single record, but the database filter was insufficiently specific or unique constraints
-  are missing on the queried columns.
+  sqlalchemy.exc.MultipleResultsFound is raised by SQLAlchemy when calling .one(),
+  .one_or_none(), or .scalar_one() on a query that matched multiple rows in the database.
+  The operation requires an unambiguous single record, but the database query matched two
+  or more rows due to missing uniqueness constraints or non-specific filter criteria.
 common_causes:
   - "Calling .one() on a query filtered by a non-unique column (e.g. status, first_name, or foreign key)."
   - "Duplicate records in a table that lacks a unique database constraint or index on the lookup columns."

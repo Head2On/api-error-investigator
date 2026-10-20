@@ -7,9 +7,10 @@ subcategory: query_result
 
 summary: "A database query expected at least one row, but none was returned."
 explanation: >
-  sqlalchemy.exc.NoResultFound is raised by SQLAlchemy when calling .one() on a query,
-  Result, or scalar execution that returned zero database rows. The application required
-  an exact match (such as an entity lookup by primary key), but the criteria matched no rows in the table.
+  sqlalchemy.exc.NoResultFound is raised by SQLAlchemy when calling .one(), .scalar_one(),
+  or Session.get_one() on a query that returned zero rows. In SQLAlchemy ORM and Core,
+  these methods assert that a unique row exists matching the filter criteria; if no row
+  is found, this exception is raised rather than returning None.
 common_causes:
   - "Querying for a primary key or unique identifier that does not exist in the database table."
   - "Applying restrictive WHERE filters that eliminated all rows (e.g. soft-delete, tenant, or status filters)."

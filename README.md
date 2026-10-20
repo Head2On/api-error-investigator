@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 293 passed](https://img.shields.io/badge/tests-293%20passed-brightgreen.svg)]()
+[![Tests: 296 passed](https://img.shields.io/badge/tests-296%20passed-brightgreen.svg)]()
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)]()
 
 A fast, deterministic CLI developer tool that investigates Python and API errors by parsing tracebacks, matching them against a curated knowledge base, and returning structured diagnoses with root causes and actionable fixes.
@@ -301,7 +301,7 @@ Out of the box, `investigate` includes curated diagnostics for:
 | `httpx.ConnectError` | `network` | — |
 | **Data** | | |
 | `json.JSONDecodeError` | `data` | `JSONDecodeError` |
-| `pydantic.ValidationError` | `data` | `ValidationError` |
+| `pydantic.ValidationError` | `data` | — |
 | **Database** | | |
 | `sqlalchemy.exc.IntegrityError` | `database` | `IntegrityError` |
 | `sqlalchemy.exc.OperationalError` | `database` | `OperationalError` |
@@ -617,7 +617,7 @@ pytest --cov=investigator --cov-report=term-missing
 
 ### Current Status
 
-- **293 passed tests**
+- **296 passed tests**
 - **100% statement coverage** across all source files
 - Strict test isolation (cache resets, interactive TTY simulation, edge-case and adversarial checks)
 

@@ -1,6 +1,5 @@
 error_type: pydantic.ValidationError
-aliases:
-  - ValidationError
+aliases: []
 
 category: data
 subcategory: schema_validation
