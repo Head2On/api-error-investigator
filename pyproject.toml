@@ -26,6 +26,12 @@ dependencies = [
     "pyyaml",
 ]
 
+[project.optional-dependencies]
+fastapi = [
+    "fastapi>=0.100.0",
+    "httpx>=0.24.0",
+]
+
 [project.scripts]
 investigate = "investigator.cli:app"
 

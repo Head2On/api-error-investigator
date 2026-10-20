@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 238 passed](https://img.shields.io/badge/tests-238%20passed-brightgreen.svg)]()
+[![Tests: 260 passed](https://img.shields.io/badge/tests-260%20passed-brightgreen.svg)]()
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)]()
 
 A fast, deterministic CLI developer tool that investigates Python and API errors by parsing tracebacks, matching them against a curated knowledge base, and returning structured diagnoses with root causes and actionable fixes.
@@ -432,6 +432,113 @@ except KnowledgeEntryError as err:
 
 ---
 
+## FastAPI & Starlette Middleware
+
+Error Investigator provides `InvestigatorMiddleware` for FastAPI and Starlette applications, enabling automatic error interception, request context extraction, credential sanitization, and structured diagnosis routing.
+
+Install with FastAPI support:
+
+```bash
+pip install error-investigator[fastapi]
+```
+
+### 1. Basic Setup (Default Re-Raise)
+
+By default (`reraise=True`), unhandled route exceptions are caught, investigated, rendered to `sys.stderr`, and re-raised for your standard exception handlers:
+
+```python
+from fastapi import FastAPI
+from investigator.fastapi import InvestigatorMiddleware
+
+app = FastAPI()
+app.add_middleware(InvestigatorMiddleware)
+
+@app.get("/users/{user_id}")
+def get_user(user_id: int):
+    # If this raises a KeyError or ValueError, it will be automatically diagnosed
+    return database[user_id]
+```
+
+### 2. Structured JSON 500 Responses (`reraise=False`)
+
+To return structured diagnostic JSON responses to callers instead of standard 500 crashes, set `reraise=False`:
+
+```python
+app.add_middleware(InvestigatorMiddleware, reraise=False)
+```
+
+#### Sample Response for Known Errors (`Status: 500 Internal Server Error`):
+Headers:
+`X-Error-Investigated: true`
+`X-Error-Status: known`
+
+```json
+{
+  "error": "ValueError",
+  "status": "known",
+  "message": "invalid literal for int() with base 10: 'abc'",
+  "investigation": {
+    "summary": "A function received a value of the correct type but with an invalid content.",
+    "explanation": "ValueError means the argument had the right type, but the value itself was not acceptable...",
+    "common_causes": [
+      "Calling int('abc') on non-numeric strings.",
+      "Parsing a malformed date/time string."
+    ],
+    "fixes": [
+      "Wrap the call in try/except and validate input before passing it in.",
+      "Check the argument at the call site."
+    ],
+    "docs_url": "https://docs.python.org/3/library/exceptions.html#ValueError",
+    "related_errors": ["TypeError", "KeyError"]
+  }
+}
+```
+
+### 3. Custom Telemetry & Sinks
+
+You can route diagnoses and request contexts directly to your logging or monitoring service:
+
+```python
+def my_sink(result, context):
+    logger.error(
+        "Request failed: %s %s -> %s",
+        context["method"],
+        context["path"],
+        result.parsed_error["error_type"],
+    )
+
+app.add_middleware(InvestigatorMiddleware, sink=my_sink)
+```
+
+The sink dispatcher supports:
+- **1-argument sinks:** `sink(result)`
+- **2-argument sinks:** `sink(result, context)`
+- **Async sinks:** `async def sink(result, context): await send_alert(...)`
+
+### 4. Automatic Sanitization (`sanitize=True`)
+
+Enabled by default, sanitization protects sensitive data before logging, printing, or sending responses:
+- **Headers Redacted:** `Authorization`, `Cookie`, `X-Api-Key`, and any header containing `auth`, `token`, `secret`, `key`, or `password` are replaced with `"[REDACTED]"`.
+- **Query Parameters Redacted:** Sensitive query values like `?token=...`, `?password=...`, and `?secret=...` are masked.
+- **Traceback Message Scrubbing:** Credentials in exception messages (`password='...'` or `Bearer ...`) are scrubbed before reaching sinks or terminal output.
+
+To disable sanitization:
+```python
+app.add_middleware(InvestigatorMiddleware, sanitize=False)
+```
+
+### 5. Custom Knowledge Base
+
+Teams can supply custom knowledge catalogs via `kb_dir`:
+
+```python
+app.add_middleware(InvestigatorMiddleware, kb_dir="./custom_kb")
+```
+
+If the custom directory contains invalid schema or identifier collisions, `KnowledgeEntryError` is raised upfront on application startup.
+
+---
+
 ## Architecture & Codebase Layout
 
 ```text
@@ -440,12 +547,14 @@ src/investigator/
 ├── cli.py                  # CLI application and Typer command wiring
 ├── cli_format.py           # Terminal output presentation (88-col wrap, hanging indents)
 ├── error_parser.py         # Traceback parser extracting structured ParsedError
+├── fastapi.py              # FastAPI / Starlette middleware (InvestigatorMiddleware)
 ├── investigation.py        # Investigation dataclass
 ├── investigation_result.py # Result envelope and status invariants
 ├── investigator.py         # Pipeline orchestration: parse → lookup → result
 ├── io_utils.py             # Multiline stdin capture (interactive TTY & pipe support)
 ├── knowledge_loader.py     # YAML loader, schema validation, and collision detection
 ├── knowledge_lookup.py     # In-memory index and lookup engine
+├── middleware.py           # Middleware re-exports and aliases
 ├── sdk.py                  # Programmatic Python SDK (investigate_exception, capture_exception)
 └── knowledge/              # Built-in curated YAML knowledge entries
 ```
@@ -454,6 +563,7 @@ src/investigator/
 
 The codebase enforces strict, unidirectional module layering:
 - **CLI Layer:** [`cli.py`](src/investigator/cli.py) handles terminal I/O, invokes the loader for upfront `--kb-dir` validation, and triggers the investigator.
+- **Middleware Layer:** [`fastapi.py`](src/investigator/fastapi.py) & [`middleware.py`](src/investigator/middleware.py) provide ASGI middleware for web frameworks.
 - **SDK Layer:** [`sdk.py`](src/investigator/sdk.py) provides programmatic developer integration (`investigate_exception`, `capture_exception`).
 - **Orchestration Layer:** [`investigator.py`](src/investigator/investigator.py) coordinates parsing and lookup.
 - **Lookup Layer:** [`knowledge_lookup.py`](src/investigator/knowledge_lookup.py) manages in-memory indexing and query matching.
@@ -473,7 +583,7 @@ pytest --cov=investigator --cov-report=term-missing
 
 ### Current Status
 
-- **238 passed tests**
+- **260 passed tests**
 - **100% statement coverage** across all source files
 - Strict test isolation (cache resets, interactive TTY simulation, edge-case and adversarial checks)
 
