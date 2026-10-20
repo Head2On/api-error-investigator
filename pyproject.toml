@@ -44,3 +44,8 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "investigator.knowledge" = ["*.yaml"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]
