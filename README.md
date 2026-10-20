@@ -459,22 +459,36 @@ def get_user(user_id: int):
     return database[user_id]
 ```
 
-### 2. Structured JSON 500 Responses (`reraise=False`)
+### 2. Suppressed Mode & Response Exposure (`reraise=False`)
 
-To return structured diagnostic JSON responses to callers instead of standard 500 crashes, set `reraise=False`:
+To catch unhandled exceptions and return a clean HTTP 500 response without crashing the server process, set `reraise=False`:
 
 ```python
 app.add_middleware(InvestigatorMiddleware, reraise=False)
 ```
 
-#### Sample Response for Known Errors (`Status: 500 Internal Server Error`):
-Headers:
-`X-Error-Investigated: true`
-`X-Error-Status: known`
+By default, the returned JSON response is strictly minimal to prevent internal implementation details from leaking to clients:
 
 ```json
 {
-  "error": "ValueError",
+  "error": "InternalServerError"
+}
+```
+Headers:
+`X-Error-Investigated: true`
+`X-Error-Status: known` (or `unknown`)
+
+#### Opt-In Diagnostic Body (`expose_diagnosis=True`)
+
+For development environments or trusted internal APIs, pass `expose_diagnosis=True` to include the full structured diagnosis directly in the JSON response:
+
+```python
+app.add_middleware(InvestigatorMiddleware, reraise=False, expose_diagnosis=True)
+```
+
+```json
+{
+  "error": "InternalServerError",
   "status": "known",
   "message": "invalid literal for int() with base 10: 'abc'",
   "investigation": {
@@ -496,14 +510,15 @@ Headers:
 
 ### 3. Custom Telemetry & Sinks
 
-You can route diagnoses and request contexts directly to your logging or monitoring service:
+You can route diagnoses and immutable `RequestContext` instances directly to your logging or monitoring pipeline:
 
 ```python
 def my_sink(result, context):
     logger.error(
-        "Request failed: %s %s -> %s",
-        context["method"],
-        context["path"],
+        "Request failed: %s %s (status %d) -> %s",
+        context.method,
+        context.path,
+        context.status_code,
         result.parsed_error["error_type"],
     )
 
@@ -554,7 +569,6 @@ src/investigator/
 ├── io_utils.py             # Multiline stdin capture (interactive TTY & pipe support)
 ├── knowledge_loader.py     # YAML loader, schema validation, and collision detection
 ├── knowledge_lookup.py     # In-memory index and lookup engine
-├── middleware.py           # Middleware re-exports and aliases
 ├── sdk.py                  # Programmatic Python SDK (investigate_exception, capture_exception)
 └── knowledge/              # Built-in curated YAML knowledge entries
 ```
@@ -563,7 +577,7 @@ src/investigator/
 
 The codebase enforces strict, unidirectional module layering:
 - **CLI Layer:** [`cli.py`](src/investigator/cli.py) handles terminal I/O, invokes the loader for upfront `--kb-dir` validation, and triggers the investigator.
-- **Middleware Layer:** [`fastapi.py`](src/investigator/fastapi.py) & [`middleware.py`](src/investigator/middleware.py) provide ASGI middleware for web frameworks.
+- **Middleware Layer:** [`fastapi.py`](src/investigator/fastapi.py) provides ASGI middleware for web frameworks.
 - **SDK Layer:** [`sdk.py`](src/investigator/sdk.py) provides programmatic developer integration (`investigate_exception`, `capture_exception`).
 - **Orchestration Layer:** [`investigator.py`](src/investigator/investigator.py) coordinates parsing and lookup.
 - **Lookup Layer:** [`knowledge_lookup.py`](src/investigator/knowledge_lookup.py) manages in-memory indexing and query matching.

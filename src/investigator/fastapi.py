@@ -10,6 +10,7 @@ from __future__ import annotations
 import inspect
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -26,15 +27,14 @@ except ImportError as err:
     ) from err
 
 from investigator.cli_format import format_result
-from investigator.error_parser import ParsedError
 from investigator.investigation_result import InvestigationResult
 from investigator.knowledge_loader import KnowledgeEntryError, load_all_entries
 from investigator.sdk import investigate_exception
 
 __all__ = [
     "InvestigatorMiddleware",
+    "RequestContext",
     "sanitize_context",
-    "sanitize_result",
     "sanitize_text",
     "sanitize_url",
 ]
@@ -63,6 +63,19 @@ SENSITIVE_KEY_SUBSTRINGS = (
 )
 
 
+@dataclass(frozen=True)
+class RequestContext:
+    """Immutable request context captured when an error occurs."""
+
+    method: str
+    path: str
+    url: str
+    client: str | None
+    headers: dict[str, str]
+    query_params: dict[str, str]
+    status_code: int
+
+
 def sanitize_url(url: str) -> str:
     """Sanitize sensitive query parameter values within a URL string."""
     parts = urlsplit(url)
@@ -80,10 +93,10 @@ def sanitize_url(url: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, parts.path, new_query, parts.fragment))
 
 
-def sanitize_context(context: dict[str, Any]) -> dict[str, Any]:
-    """Return a sanitized copy of the request context dictionary."""
+def sanitize_context(context: RequestContext) -> RequestContext:
+    """Return a sanitized copy of the RequestContext."""
     headers: dict[str, str] = {}
-    for k, v in context.get("headers", {}).items():
+    for k, v in context.headers.items():
         k_lower = k.lower()
         if k_lower in SENSITIVE_HEADER_NAMES or any(sub in k_lower for sub in SENSITIVE_KEY_SUBSTRINGS):
             headers[k] = "[REDACTED]"
@@ -91,26 +104,28 @@ def sanitize_context(context: dict[str, Any]) -> dict[str, Any]:
             headers[k] = v
 
     query_params: dict[str, str] = {}
-    for k, v in context.get("query_params", {}).items():
+    for k, v in context.query_params.items():
         k_lower = k.lower()
         if any(sub in k_lower for sub in SENSITIVE_KEY_SUBSTRINGS):
             query_params[k] = "[REDACTED]"
         else:
             query_params[k] = v
 
-    raw_url = context.get("url", "")
-    sanitized_url = sanitize_url(raw_url) if raw_url else raw_url
+    sanitized_url = sanitize_url(context.url) if context.url else context.url
 
-    return {
-        **context,
-        "url": sanitized_url,
-        "headers": headers,
-        "query_params": query_params,
-    }
+    return RequestContext(
+        method=context.method,
+        path=context.path,
+        url=sanitized_url,
+        client=context.client,
+        headers=headers,
+        query_params=query_params,
+        status_code=context.status_code,
+    )
 
 
 def sanitize_text(text: str | None) -> str | None:
-    """Mask credential patterns in error messages and stack traces."""
+    """Mask credential patterns in rendered error messages and stack traces."""
     if text is None:
         return None
     # Mask Bearer tokens
@@ -128,28 +143,10 @@ def sanitize_text(text: str | None) -> str | None:
     return sanitized
 
 
-def sanitize_result(result: InvestigationResult) -> InvestigationResult:
-    """Return a copy of the InvestigationResult with sanitized error text."""
-    sanitized_parsed: ParsedError = {
-        **result.parsed_error,
-        "message": sanitize_text(result.parsed_error.get("message")),
-        "stack_trace": sanitize_text(result.parsed_error.get("stack_trace")) or "",
-    }
-    if result.status == "known":
-        assert result.knowledge is not None
-        assert result.investigation is not None
-        return InvestigationResult.known(
-            sanitized_parsed,
-            result.knowledge,
-            result.investigation,
-        )
-    return InvestigationResult.unknown(sanitized_parsed)
-
-
 async def _dispatch_sink(
     sink: Callable[..., Any],
     result: InvestigationResult,
-    context: dict[str, Any],
+    context: RequestContext,
 ) -> None:
     """Dispatch diagnosis and context to sink, handling 1-arg, 2-arg, and async sinks."""
     sig = inspect.signature(sink)
@@ -185,9 +182,12 @@ class InvestigatorMiddleware(BaseHTTPMiddleware):
         *,
         kb_dir: Path | str | None = None,
         reraise: bool = True,
-        sink: Callable[..., Any] | None = None,
+        sink: Callable[[InvestigationResult, RequestContext], None]
+        | Callable[[InvestigationResult], None]
+        | None = None,
         sanitize: bool = True,
         status_code: int = 500,
+        expose_diagnosis: bool = False,
     ) -> None:
         super().__init__(app)
         if kb_dir is not None:
@@ -197,6 +197,7 @@ class InvestigatorMiddleware(BaseHTTPMiddleware):
         self.sink = sink
         self.sanitize = sanitize
         self.status_code = status_code
+        self.expose_diagnosis = expose_diagnosis
 
     async def dispatch(
         self,
@@ -207,44 +208,45 @@ class InvestigatorMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         except Exception as exc:
             result = investigate_exception(exc, kb_dir=self.kb_dir)
-            context: dict[str, Any] = {
-                "method": request.method,
-                "path": request.url.path,
-                "url": str(request.url),
-                "client": request.client.host if request.client else None,
-                "headers": dict(request.headers),
-                "query_params": dict(request.query_params),
-                "status_code": self.status_code if not self.reraise else 500,
-            }
+            raw_context = RequestContext(
+                method=request.method,
+                path=request.url.path,
+                url=str(request.url),
+                client=request.client.host if request.client else None,
+                headers=dict(request.headers),
+                query_params=dict(request.query_params),
+                status_code=self.status_code if not self.reraise else 500,
+            )
 
-            if self.sanitize:
-                context = sanitize_context(context)
-                result = sanitize_result(result)
+            context = sanitize_context(raw_context) if self.sanitize else raw_context
 
             if self.sink is not None:
                 await _dispatch_sink(self.sink, result, context)
             else:
+                rendered = format_result(result)
+                if self.sanitize:
+                    rendered = sanitize_text(rendered) or ""
                 sys.stderr.write("\n")
-                sys.stderr.write(format_result(result))
+                sys.stderr.write(rendered)
                 sys.stderr.write("\n")
 
             if self.reraise:
                 raise
 
-            content: dict[str, Any] = {
-                "error": result.parsed_error.get("error_type") or "InternalServerError",
-                "status": result.status,
-                "message": result.parsed_error.get("message") or "An internal error occurred",
-            }
-            if result.investigation is not None:
-                content["investigation"] = {
-                    "summary": result.investigation.summary,
-                    "explanation": result.investigation.explanation,
-                    "common_causes": result.investigation.common_causes,
-                    "fixes": result.investigation.fixes,
-                    "docs_url": result.investigation.docs_url,
-                    "related_errors": result.investigation.related_errors,
-                }
+            content: dict[str, Any] = {"error": "InternalServerError"}
+            if self.expose_diagnosis:
+                content["status"] = result.status
+                content["message"] = result.parsed_error.get("message") or "An internal error occurred"
+                if result.investigation is not None:
+                    content["investigation"] = {
+                        "summary": result.investigation.summary,
+                        "explanation": result.investigation.explanation,
+                        "common_causes": result.investigation.common_causes,
+                        "fixes": result.investigation.fixes,
+                        "docs_url": result.investigation.docs_url,
+                        "related_errors": result.investigation.related_errors,
+                    }
+
             headers = {
                 "X-Error-Investigated": "true",
                 "X-Error-Status": result.status,
