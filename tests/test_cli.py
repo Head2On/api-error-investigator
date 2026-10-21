@@ -1,5 +1,6 @@
 """Tests for investigator.cli."""
 
+import re
 import runpy
 import sys
 import pytest
@@ -7,10 +8,14 @@ from typer.testing import CliRunner
 
 from investigator.cli import app
 
-runner = CliRunner()
+runner = CliRunner(env={"NO_COLOR": "1"})
 
 # Text that must never appear in output for expected user/config errors.
 _NO_TRACEBACK = ("Traceback", "raise ", "Traceback (most recent call last)")
+
+
+def _strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;?]*[a-zA-Z]", "", text)
 
 
 def _assert_no_traceback(output: str) -> None:
@@ -37,12 +42,13 @@ def _write_valid_entry(dir_, error_type: str = "MyCustomError") -> None:
 def test_cli_help():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "Error Investigator" in result.output
+    clean_output = _strip_ansi(result.output)
+    assert "Error Investigator" in clean_output
     # Single-command CLI: stops advertising COMMAND it doesn't have.
-    assert "Usage: investigate [OPTIONS]" in result.output
-    assert "COMMAND" not in result.output
+    assert "Usage: investigate [OPTIONS]" in clean_output
+    assert "COMMAND" not in clean_output
     # The new flag must be documented.
-    assert "--kb-dir" in result.output
+    assert "--kb-dir" in clean_output
 
 
 # ------------------------------------------------------------------ piped
