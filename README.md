@@ -69,6 +69,18 @@ A fast, deterministic CLI developer tool that investigates Python and API errors
 - Python 3.10 or higher
 - Git
 
+### Install with pip (Recommended)
+
+```bash
+pip install error-investigator
+```
+
+With optional FastAPI middleware support:
+
+```bash
+pip install "error-investigator[fastapi]"
+```
+
 ### Install from Source
 
 ```bash
