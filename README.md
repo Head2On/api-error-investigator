@@ -623,6 +623,20 @@ pytest --cov=investigator --cov-report=term-missing
 
 ---
 
+## Roadmap
+
+- **Chunk A** - Core deterministic investigator ✅
+- **Chunk B** - External investigation engine ⏭️ deferred
+- **Chunk C** - Developer integration ✅
+  - C1: CLI productization
+  - C2: Python SDK
+  - C3: FastAPI middleware
+  - C4: Knowledge base expansion (20 entries)
+- **Chunks D-G** - Future direction (backend service, infrastructure,
+  production hardening, release) - not currently planned
+
+---
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
